@@ -65,7 +65,7 @@ function profileProgressStyle(pct: number) {
   };
 }
 
-const mockOrders = [
+const sampleOrders = [
   {
     orderNo: "38472910",
     courseName: COURSES[0]?.title ?? "课程",
@@ -288,7 +288,7 @@ export function ProfilePage() {
         )
       ) : (
         <ul className="mt-6 space-y-3">
-          {mockOrders.map((o) => (
+          {sampleOrders.map((o) => (
             <li key={o.orderNo}>
               <Card className="border-border/80">
                 <CardContent className="space-y-2 p-4 text-sm sm:p-5">

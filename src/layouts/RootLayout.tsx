@@ -21,7 +21,7 @@ export function RootLayout() {
       <Outlet />
       <footer className="border-t border-border/60 py-10">
         <div className="mx-auto flex min-w-0 max-w-6xl flex-col items-center justify-between gap-4 px-4 text-center text-xs text-muted-foreground sm:flex-row sm:text-left sm:px-6">
-          <p>© 2026 智学 AI · 让学习发生在业务一线</p>
+          <p>© 2026 智学 AI · 专注AI变现，让普通人也能用AI赚到钱</p>
           <div className="flex max-w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:justify-end">
             <Link to="/" className="shrink-0 hover:text-foreground">
               首页

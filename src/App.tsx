@@ -6,6 +6,7 @@ import { CourseDetailPage } from "@/pages/CourseDetailPage";
 import { VipPage } from "@/pages/VipPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
+import { PaySuccessPage } from "@/pages/PaySuccessPage";
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/courses" element={<CourseListPage />} />
         <Route path="/courses/:courseId" element={<CourseDetailPage />} />
+        <Route path="/pay/success" element={<PaySuccessPage />} />
         <Route path="/vip" element={<VipPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="*" element={<NotFoundPage />} />

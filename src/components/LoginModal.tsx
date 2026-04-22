@@ -78,7 +78,7 @@ export function LoginModal({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>登录</DialogTitle>
-          <DialogDescription>使用手机号验证码登录（演示环境，无真实接口）</DialogDescription>
+          <DialogDescription>使用手机号验证码登录，安全快捷</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-2">

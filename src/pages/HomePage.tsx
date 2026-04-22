@@ -49,17 +49,23 @@ const categoryEntries: {
   },
 ];
 
-const hotCourses = COURSES.filter((c) => c.isHot).slice(0, 6);
-
 export function HomePage() {
   React.useEffect(() => {
     document.title = "AIlearn Pro - AI商业课程平台";
   }, []);
 
+  const courseCount = COURSES.length;
+
+  const hotCourses = React.useMemo(() => {
+    const hot = COURSES.filter((c) => c.isHot);
+    const list = hot.length > 0 ? hot : COURSES;
+    return list.slice(0, 6);
+  }, []);
+
   return (
     <main className="min-w-0">
-      {/* Hero */}
-      <section className="relative min-h-[80vh] overflow-hidden border-b border-border/60">
+      {/* Hero：isolate + overflow-clip 避免大模糊层溢出盖住下方区块（部分浏览器叠层问题） */}
+      <section className="relative isolate min-h-[80vh] overflow-clip border-b border-border/60">
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-purple-950 to-slate-900" />
         <div
           aria-hidden
@@ -127,7 +133,8 @@ export function HomePage() {
               <span className="inline-flex items-center gap-2 font-medium" role="listitem">
                 <span aria-hidden>📚</span>
                 <span>
-                  18 <span className="text-white/75">门精品课</span>
+                  {courseCount}{" "}
+                  <span className="text-white/75">门精品课</span>
                 </span>
               </span>
               <span className="select-none text-white/30" aria-hidden>
@@ -140,12 +147,15 @@ export function HomePage() {
                 </span>
               </span>
             </div>
+            <p className="animate-hero-fade-in-up hero-stagger-3 mt-4 max-w-xl text-pretty text-center text-[11px] leading-relaxed text-white/65 sm:text-left sm:text-xs">
+              已有学员通过本平台课程实现月收入破万
+            </p>
           </div>
         </div>
       </section>
 
       {/* 分类入口 */}
-      <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+      <section className="relative z-[1] mx-auto max-w-6xl bg-background px-4 py-14 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
             选课入口
@@ -204,7 +214,7 @@ export function HomePage() {
       </section>
 
       {/* 热门课程 */}
-      <section className="border-y border-border/60 bg-muted/30 py-14 sm:py-16">
+      <section className="relative z-[1] border-y border-border/60 bg-muted/30 py-14 sm:py-16">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
@@ -226,7 +236,7 @@ export function HomePage() {
       </section>
 
       {/* 底部 CTA */}
-      <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+      <section className="relative z-[1] mx-auto max-w-6xl bg-background px-4 py-14 sm:px-6 sm:py-16">
         <Card className="overflow-hidden border-primary/25 bg-gradient-to-br from-primary/15 via-card to-violet-500/10 shadow-md">
           <CardContent className="flex flex-col items-center gap-6 px-6 py-12 text-center sm:flex-row sm:justify-between sm:text-left">
             <p className="max-w-xl text-balance text-xl font-semibold tracking-tight text-foreground sm:text-2xl">

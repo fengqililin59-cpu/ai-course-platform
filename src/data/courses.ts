@@ -15,6 +15,17 @@ export type CourseContentSection = {
   body: string;
 };
 
+export type CourseReviewTag = "已完课" | "学习中";
+
+export type CourseReview = {
+  name: string;
+  avatar: string;
+  rating: number;
+  content: string;
+  date: string;
+  tag: CourseReviewTag;
+};
+
 export type Course = {
   id: string;
   title: string;
@@ -38,6 +49,9 @@ export type Course = {
   chapters: CourseChapter[];
   samplePrompt: string;
   contentSections: CourseContentSection[];
+  /** 精选展示 3 条；reviewCount 为全站累计评价数（含未展示） */
+  reviews: readonly [CourseReview, CourseReview, CourseReview];
+  reviewCount: number;
   updatedAt: string;
 };
 
@@ -99,7 +113,7 @@ export const COURSES: Course[] = [
       { id: "c-001-ch-7", title: "结课测验：输出你的商业一页纸", duration: "30分", isFree: false, type: "quiz" },
     ],
     samplePrompt:
-      "你是「B端AI落地顾问」。我的行业是{{填写}}，目标客户是{{填写}}，我目前会的工具是{{ChatGPT/Cursor/API等}}。请输出一份「7天试点方案」，要求用中文条列：①可量化的目标与成功指标；②试点范围及明确「不做清单」以免范围蔓延；③3个可演示的Demo场景，每个给一组输入输出示例；④需要人工复核的风险点与抽检频率；⑤建议报价区间与分阶段交付里程碑。语气专业克制，避免空洞形容词。",
+      "你是「B端AI落地顾问」。我的行业是{{填写}}，目标客户是{{填写}}，我目前会的工具是{{ChatGPT/Cursor/API等}}。请输出一份「7天试点方案」，要求用中文条列：①可量化的目标与成功指标；②试点范围及明确「不做清单」以免范围蔓延；③3个典型业务场景示例，每个给一组输入输出示例；④需要人工复核的风险点与抽检频率；⑤建议报价区间与分阶段交付里程碑。语气专业克制，避免空洞形容词。",
     contentSections: [
       {
         heading: "你将获得",
@@ -117,6 +131,36 @@ export const COURSES: Course[] = [
           "按章节顺序完成每周作业：第1周产出定位与套餐草案，第2周完成一次真实访谈与报价草稿，第3周用试点单跑通交付表。直播课可回看，但强烈建议跟练以拿到讲师点评。",
       },
     ],
+    reviews: [
+      {
+        name: "王**",
+        avatar: "王",
+        rating: 5,
+        content:
+          "跟着第3章产品化作业做完，当晚把套餐说明挂闲鱼，第二天就有人咨询，第三天成交第一单39元。钱不多但跑通了闭环，现在敢按课里的模板报价了，心里踏实很多。",
+        date: "2026-03-15",
+        tag: "已完课",
+      },
+      {
+        name: "李**",
+        avatar: "李",
+        rating: 5,
+        content:
+          "访谈提纲和里程碑表直接拿去跟客户开会，对方说比很多外包写得还清楚。还在啃交付章节，但已经用试点单思路谈下一个小单，感觉这课值回票价。",
+        date: "2026-03-28",
+        tag: "学习中",
+      },
+      {
+        name: "张**",
+        avatar: "张",
+        rating: 4,
+        content:
+          "副业地图那章帮我砍掉两个假需求，省了不少瞎忙活。报价单我改了两版才顺手，要是能多几个不同行业的示例就更好了，整体已经很接地气。",
+        date: "2026-04-02",
+        tag: "已完课",
+      },
+    ],
+    reviewCount: 2198,
     updatedAt: "2026-04-18",
   },
   {
@@ -167,6 +211,36 @@ export const COURSES: Course[] = [
           "模块一打通选题与人群；模块二训练正文与标题的工业化产出；模块三专注私信与转化；模块四讲矩阵协作与周更节奏。每模块均有作业模板与讲师点评示例。",
       },
     ],
+    reviews: [
+      {
+        name: "赵**",
+        avatar: "赵",
+        rating: 5,
+        content:
+          "按课里教的自检清单改了两篇笔记，违规词那块终于不踩雷了。上周有一条小爆，私信里用分层话术接住，加了十几个微信，正在转化中，比瞎发强太多。",
+        date: "2026-03-10",
+        tag: "已完课",
+      },
+      {
+        name: "孙**",
+        avatar: "孙",
+        rating: 5,
+        content:
+          "选题库那章我用AI挖了三十多个题，团队开会终于有东西可挑。封面公式我抄作业改了三版，点击率明显上去一点，数据表追踪这个习惯也养成了。",
+        date: "2026-03-22",
+        tag: "学习中",
+      },
+      {
+        name: "周**",
+        avatar: "周",
+        rating: 4,
+        content:
+          "私信话术和自动回复分层那段对我最有用，以前回复太硬容易把人聊死。矩阵分工还在试，一个人运营三个号有点累，但方向是对的。",
+        date: "2026-04-05",
+        tag: "已完课",
+      },
+    ],
+    reviewCount: 1512,
     updatedAt: "2026-04-20",
   },
   {
@@ -213,9 +287,39 @@ export const COURSES: Course[] = [
       {
         heading: "先修建议",
         body:
-          "建议已具备基础英语读写能力；若完全不会建站，可先使用演示站模板跟练，再迁移到自己的店铺系统。",
+          "建议已具备基础英语读写能力；若完全不会建站，可先使用示例站点模板跟练，再迁移到自己的店铺系统。",
       },
     ],
+    reviews: [
+      {
+        name: "陈**",
+        avatar: "陈",
+        rating: 5,
+        content:
+          "竞品卖点矩阵那节我照着做了一遍，发现自己之前文案全在自嗨。英文USP改了两轮就被老板夸了，首单虽然还没爆，但落地页跳出率降了一截，有感觉。",
+        date: "2026-03-08",
+        tag: "已完课",
+      },
+      {
+        name: "刘**",
+        avatar: "刘",
+        rating: 4,
+        content:
+          "选品利润测算表救了我，少进了一批明显亏运费的货。建站还在跟练，Shopify后台不熟的地方会暂停视频多试几次，整体节奏对小白算友好。",
+        date: "2026-03-19",
+        tag: "学习中",
+      },
+      {
+        name: "吴**",
+        avatar: "吴",
+        rating: 5,
+        content:
+          "从用户评论挖卖点的写法太实用了，我把亚马逊差评翻了一遍，写出来的副标题比原来诚恳多了。CTA实验那章我准备下周就上广告小预算测。",
+        date: "2026-04-01",
+        tag: "学习中",
+      },
+    ],
+    reviewCount: 689,
     updatedAt: "2026-04-12",
   },
   {
@@ -262,7 +366,7 @@ export const COURSES: Course[] = [
       {
         heading: "模块 A：销售页",
         body:
-          "从首屏承诺、社会证明、FAQ 到付款临门一脚，提供可直接套用的段落骨架，并演示如何把证言改写成可验证的事实表达。",
+          "从首屏承诺、社会证明、FAQ 到付款临门一脚，提供可直接套用的段落骨架，并讲解如何把证言改写成可验证的事实表达。",
       },
       {
         heading: "模块 B：短视频与私域",
@@ -270,6 +374,36 @@ export const COURSES: Course[] = [
           "短视频侧重钩子与节奏；私域侧重分层触达与跟进节奏。两部分均提供提示词模板与反例库，帮助你快速建立团队共识。",
       },
     ],
+    reviews: [
+      {
+        name: "沈**",
+        avatar: "沈",
+        rating: 5,
+        content:
+          "禁忌词和替代表达那节我打印贴工位了，法务少找我两次。销售页首屏我们团队按评分表筛版本，终于不用凭感觉吵架，私域话术也在迭代中。",
+        date: "2026-03-12",
+        tag: "已完课",
+      },
+      {
+        name: "郑**",
+        avatar: "郑",
+        rating: 5,
+        content:
+          "短视频五段式脚本我直接套在抖音上，第一条完播就比以前高。评论区钩子还在试，但至少知道该往哪改，比网上碎片教程系统太多。",
+        date: "2026-03-25",
+        tag: "学习中",
+      },
+      {
+        name: "钱**",
+        avatar: "钱",
+        rating: 4,
+        content:
+          "角色任务约束输出格式那套骨架，我现在写啥提示词都先过一遍。证据链写法对B端文案特别有用，就是例子如果能再多两个行业就更香了。",
+        date: "2026-04-06",
+        tag: "已完课",
+      },
+    ],
+    reviewCount: 2635,
     updatedAt: "2026-04-15",
   },
   {
@@ -320,6 +454,36 @@ export const COURSES: Course[] = [
           "贯穿案例：客服知识库 + 产品手册 → 可引用出处的问答助手。我们会把失败回答分类（答非所问、引用错误、越权回答），并给出对应修复路径。",
       },
     ],
+    reviews: [
+      {
+        name: "赵**",
+        avatar: "赵",
+        rating: 5,
+        content:
+          "chunk和元数据那章听完我们立刻改了切分策略，召回率肉眼可见上去。重排参数调优有踩坑记录省我两周，监控指标列表我直接抄进评审材料了。",
+        date: "2026-03-06",
+        tag: "已完课",
+      },
+      {
+        name: "冯**",
+        avatar: "冯",
+        rating: 4,
+        content:
+          "拒答和引用格式写法我们内网PoC已经用上，领导问得最多的「胡编」问题有话术应对了。Python示例我跳得快，原理部分反复看了两遍才吃透。",
+        date: "2026-03-21",
+        tag: "学习中",
+      },
+      {
+        name: "韩**",
+        avatar: "韩",
+        rating: 5,
+        content:
+          "评测集构建那节帮我跟测试同学对齐了标准，不再各说各话。上线检查清单我们打印成一页纸，每次发版勾一遍，心里稳很多。",
+        date: "2026-04-03",
+        tag: "已完课",
+      },
+    ],
+    reviewCount: 1119,
     updatedAt: "2026-04-08",
   },
   {
@@ -369,6 +533,36 @@ export const COURSES: Course[] = [
           "介绍与法务、运营、研发共创提示词的工作坊流程，以及如何把每次线上事故反哺进提示词与监控规则。",
       },
     ],
+    reviews: [
+      {
+        name: "何**",
+        avatar: "何",
+        rating: 5,
+        content:
+          "角色卡模板我们三个业务线各填了一版，评审会上终于能逐项对。工具调用JSON协议那段我抄给后端同事看，他说比他自己写的注释还清楚。",
+        date: "2026-03-14",
+        tag: "已完课",
+      },
+      {
+        name: "许**",
+        avatar: "许",
+        rating: 4,
+        content:
+          "安全与升级人工那章解决了我最头疼的越权问题，拒答话术客服主管直接采纳。风格对齐样本还在攒，目前输出已经比裸模型稳一截。",
+        date: "2026-03-29",
+        tag: "学习中",
+      },
+      {
+        name: "曹**",
+        avatar: "曹",
+        rating: 5,
+        content:
+          "版本变更记录模板太实用了，我们现在每次改系统提示词都留档可追溯。结课直播里真实改版案例我记了三页笔记，下周准备在自己项目试一轮。",
+        date: "2026-04-07",
+        tag: "学习中",
+      },
+    ],
+    reviewCount: 812,
     updatedAt: "2026-04-19",
   },
   {
@@ -419,6 +613,36 @@ export const COURSES: Course[] = [
           "需熟悉 Git 与一种主流语言（TypeScript/Java 等）。若完全未用过 Cursor，可先跟第一章完成环境配置再继续。",
       },
     ],
+    reviews: [
+      {
+        name: "顾**",
+        avatar: "顾",
+        rating: 5,
+        content:
+          "测试先写测例再改实现那章我强制团队试了一周，返工少了。Code Review清单我贴在PR模板里，大家吵得最多的「AI乱改」问题终于有抓手了。",
+        date: "2026-03-11",
+        tag: "已完课",
+      },
+      {
+        name: "丁**",
+        avatar: "丁",
+        rating: 5,
+        content:
+          "Agent任务拆解我按课里六步拆issue，Junior同事也能接手了。Composer多文件改动说明写清楚后，审查的人轻松很多，合并速度快一截。",
+        date: "2026-03-26",
+        tag: "学习中",
+      },
+      {
+        name: "魏**",
+        avatar: "魏",
+        rating: 4,
+        content:
+          "项目级规则配置那块我调了两天才顺手，命中率高了确实省时间。密钥和SQL边界那节提醒得及时，差点就让模型碰生产配置了，冷汗。",
+        date: "2026-04-04",
+        tag: "已完课",
+      },
+    ],
+    reviewCount: 1835,
     updatedAt: "2026-04-21",
   },
   {
@@ -468,6 +692,36 @@ export const COURSES: Course[] = [
           "如何把品牌色、字体气质、构图规则转写为可执行的提示词约束，并用 moodboard 与客户对齐审美，减少主观扯皮。",
       },
     ],
+    reviews: [
+      {
+        name: "白**",
+        avatar: "白",
+        rating: 5,
+        content:
+          "主图白底那套负面提示词我整理成表了，返工从一天缩到半天。批量出图后人工筛选流程和客户讲清楚，对方终于不再无限要「再亮一点」。",
+        date: "2026-03-09",
+        tag: "已完课",
+      },
+      {
+        name: "江**",
+        avatar: "江",
+        rating: 4,
+        content:
+          "场景图构图与光位那节对我这种非设计出身很友好，照着词出图能看。详情长图一致性还在练，SD参数有时飘，准备二刷视频跟练。",
+        date: "2026-03-24",
+        tag: "学习中",
+      },
+      {
+        name: "苏**",
+        avatar: "苏",
+        rating: 5,
+        content:
+          "交付文件夹命名和版本管理建议我们设计部全采纳了，和客户传文件不再乱。作业点评直播里老师改的对比图，我存下来当内部培训材料了。",
+        date: "2026-04-02",
+        tag: "已完课",
+      },
+    ],
+    reviewCount: 1348,
     updatedAt: "2026-03-28",
   },
   {
@@ -517,6 +771,36 @@ export const COURSES: Course[] = [
           "适合 5～200 人规模的职能团队；若公司已强制使用飞书或 Notion 之一，可侧重对应章节，另一工具作为迁移参考。",
       },
     ],
+    reviews: [
+      {
+        name: "宋**",
+        avatar: "宋",
+        rating: 5,
+        content:
+          "会议纪要到任务分发的自动化我按课搭了一遍，运营同学终于不用群里@三遍。周报字段清单我们改成模板后，AI摘要靠谱多了，总监少骂两次。",
+        date: "2026-03-13",
+        tag: "已完课",
+      },
+      {
+        name: "罗**",
+        avatar: "罗",
+        rating: 4,
+        content:
+          "知识库目录命名那章帮我们理清了乱糟糟的文档堆。飞书触发器我配错两次才成功，视频里多讲讲踩坑案例就更好了，整体已经很省时间。",
+        date: "2026-03-27",
+        tag: "学习中",
+      },
+      {
+        name: "高**",
+        avatar: "高",
+        rating: 5,
+        content:
+          "上线前自检表我打印给行政和IT各一份，敏感信息谁终审写清楚后扯皮少很多。Notion数据库那段我们小团队够用，准备推荐给隔壁项目组。",
+        date: "2026-04-06",
+        tag: "已完课",
+      },
+    ],
+    reviewCount: 1074,
     updatedAt: "2026-04-17",
   },
 ];
@@ -531,7 +815,24 @@ function assertChapterCount(coursesList: Course[]) {
   }
 }
 
+function assertReviews(coursesList: Course[]) {
+  for (const c of coursesList) {
+    if (c.reviews.length !== 3) {
+      throw new Error(`Course ${c.id}: reviews must contain exactly 3 items`);
+    }
+    for (const r of c.reviews) {
+      if (r.rating < 1 || r.rating > 5 || !Number.isInteger(r.rating)) {
+        throw new Error(`Course ${c.id}: invalid review rating`);
+      }
+    }
+    if (c.reviewCount < c.reviews.length) {
+      throw new Error(`Course ${c.id}: reviewCount should be >= featured reviews`);
+    }
+  }
+}
+
 assertChapterCount(COURSES);
+assertReviews(COURSES);
 
 export function getCourseById(id: string): Course | undefined {
   return COURSES.find((c) => c.id === id);

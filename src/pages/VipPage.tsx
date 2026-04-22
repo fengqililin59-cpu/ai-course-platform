@@ -69,7 +69,7 @@ export function VipPage() {
           开通会员，解锁全部课程
         </h1>
         <p className="mt-3 text-pretty text-base text-muted-foreground sm:text-lg">
-          一次开通，永久学习，持续更新
+          一次开通，永久学习，持续更新 · 新课自动解锁，无需额外付费
         </p>
       </header>
 
