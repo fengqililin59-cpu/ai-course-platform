@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -248,6 +248,55 @@ export function HomePage() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="mt-6 overflow-hidden border-amber-500/35 bg-gradient-to-br from-slate-950 via-zinc-900 to-slate-950 shadow-lg">
+          <CardContent className="px-6 py-10 sm:px-8">
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0 max-w-2xl flex-1 space-y-5">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <span
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 ring-1 ring-amber-400/35"
+                    aria-hidden
+                  >
+                    <Briefcase className="h-6 w-6 text-amber-300" />
+                  </span>
+                  <div className="min-w-0 space-y-4">
+                    <p className="text-balance text-xl font-semibold tracking-tight text-amber-100 sm:text-2xl">
+                      💼 没时间学？我们帮你做
+                    </p>
+                    <div className="space-y-2 text-pretty text-base leading-relaxed text-amber-100/85">
+                      <p>用 Cursor + Claude + ChatGPT</p>
+                      <p>3-7天交付你的网站 / 小程序 / 商业方案</p>
+                    </div>
+                    <p className="text-sm text-amber-200/80">
+                      已有企业客户通过我们的服务上线产品
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:justify-end lg:flex-col lg:items-stretch xl:flex-row xl:justify-end">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-amber-400/55 bg-transparent text-amber-50 hover:bg-amber-500/10 hover:text-amber-50"
+                  asChild
+                >
+                  <Link to="/services#cases">查看服务案例</Link>
+                </Button>
+                <Button
+                  size="lg"
+                  className="bg-amber-500 text-slate-950 hover:bg-amber-400"
+                  asChild
+                >
+                  <Link to="/services/consult" className="gap-2">
+                    立即咨询
+                    <ArrowRight className="h-4 w-4 shrink-0" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </section>

@@ -7,6 +7,10 @@ import { VipPage } from "@/pages/VipPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { PaySuccessPage } from "@/pages/PaySuccessPage";
+import { CustomServicePage } from "@/pages/CustomServicePage";
+import { ServicesListPage } from "@/pages/ServicesListPage";
+import { ServiceDetailPage } from "@/pages/ServiceDetailPage";
+import { ServiceConsultPage } from "@/pages/ServiceConsultPage";
 
 export default function App() {
   return (
@@ -17,6 +21,10 @@ export default function App() {
         <Route path="/courses/:courseId" element={<CourseDetailPage />} />
         <Route path="/pay/success" element={<PaySuccessPage />} />
         <Route path="/vip" element={<VipPage />} />
+        <Route path="/services" element={<ServicesListPage />} />
+        <Route path="/services/consult" element={<ServiceConsultPage />} />
+        <Route path="/services/:serviceId" element={<ServiceDetailPage />} />
+        <Route path="/custom-service" element={<CustomServicePage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>

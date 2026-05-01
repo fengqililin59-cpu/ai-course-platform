@@ -82,6 +82,16 @@ function randomCountdownSeconds20to24h() {
   return low + Math.floor(Math.random() * (high - low + 1));
 }
 
+function customServicePitch(category: CourseCategory): string {
+  if (category === "money") {
+    return "正在学变现与获客？我们可帮你把副业网站、落地页直接做出来，承接咨询与收款。";
+  }
+  if (category === "tools") {
+    return "正在用 Cursor 做产品？我们可承接开发交付，把你的课内原型推进到可上线版本。";
+  }
+  return "想把课里的方法论落成文档、设计与自动化？我们可按模块拆分交付。";
+}
+
 /** 与课程综合评分大致匹配的五星占比（用于展示分布条） */
 function starBarPercents(rating: number): [number, number, number, number, number] {
   if (rating >= 4.95) return [80, 15, 3, 1, 1];
@@ -231,10 +241,14 @@ export function CourseDetailPage() {
       setLoginOpen(true);
       return;
     }
-    const apiBase = (import.meta.env.VITE_PAY_API_BASE ?? "").replace(/\/$/, "");
+    const rawBase = String(import.meta.env.VITE_PAY_API_BASE ?? "").trim();
+    const apiBase = rawBase.replace(/\/$/, "");
+    const createOrderUrl = apiBase
+      ? `${apiBase}/api/pay/create-order`
+      : "/api/pay/create-order";
     setPaySubmitting(true);
     try {
-      const res = await fetch(`${apiBase}/api/pay/create-order`, {
+      const res = await fetch(createOrderUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -793,6 +807,46 @@ export function CourseDetailPage() {
                     )}
                   />
                   {favorited ? "已收藏" : "加入收藏"}
+                </Button>
+                <p className="text-center text-[11px] text-muted-foreground">
+                  支持企业对公 · 可开发票
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-amber-500/35 bg-gradient-to-b from-amber-500/10 to-card dark:from-amber-400/10">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-start gap-2 text-base">
+                  <span aria-hidden>💡</span>
+                  <span>需要定制服务？</span>
+                </CardTitle>
+                <CardDescription className="text-[13px] leading-relaxed">
+                  这门课的技能，我们可以直接帮你落地
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {customServicePitch(activeCourse.category)}
+                </p>
+                <div className="grid grid-cols-2 gap-2 text-center text-xs font-medium">
+                  <span className="rounded-md border border-border/60 bg-muted/50 py-2 text-foreground">
+                    网站开发
+                  </span>
+                  <span className="rounded-md border border-border/60 bg-muted/50 py-2 text-foreground">
+                    方案撰写
+                  </span>
+                  <span className="rounded-md border border-border/60 bg-muted/50 py-2 text-foreground">
+                    UI设计
+                  </span>
+                  <span className="rounded-md border border-border/60 bg-muted/50 py-2 text-foreground">
+                    工作流搭建
+                  </span>
+                </div>
+                <Button
+                  className="w-full bg-amber-500 text-slate-950 hover:bg-amber-400"
+                  asChild
+                >
+                  <Link to="/services/consult">获取报价</Link>
                 </Button>
                 <p className="text-center text-[11px] text-muted-foreground">
                   支持企业对公 · 可开发票

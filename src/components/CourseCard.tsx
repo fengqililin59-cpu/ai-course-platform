@@ -6,17 +6,24 @@ import {
   formatCoursePrice,
   formatStudentCount,
 } from "@/data/courses";
+import type { ServiceListing } from "@/data/services";
+import { formatPriceFrom } from "@/data/services";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 
-export type CourseCardProps = {
-  course: Course;
-  className?: string;
-  /** 在标题中高亮匹配片段（列表页搜索用） */
-  highlightKeyword?: string;
-};
+export type CourseCardProps =
+  | {
+      course: Course;
+      className?: string;
+      highlightKeyword?: string;
+    }
+  | {
+      service: ServiceListing;
+      className?: string;
+      highlightKeyword?: string;
+    };
 
 function TitleHighlight({
   title,
@@ -59,17 +66,104 @@ function tagBadgeClass(category: CourseCategory) {
   return "bg-emerald-500/10 text-emerald-900 ring-1 ring-emerald-500/20 hover:bg-emerald-500/15 dark:text-emerald-100";
 }
 
-export function CourseCard({
-  course,
-  className,
-  highlightKeyword,
-}: CourseCardProps) {
+export function CourseCard(props: CourseCardProps) {
   const [emojiVisible, setEmojiVisible] = React.useState(false);
+  const entityId = "service" in props ? props.service.id : props.course.id;
 
   React.useEffect(() => {
     const id = requestAnimationFrame(() => setEmojiVisible(true));
     return () => cancelAnimationFrame(id);
-  }, [course.id]);
+  }, [entityId]);
+
+  if ("service" in props) {
+    const { service, className, highlightKeyword } = props;
+    const cover = CATEGORY_COVER_GRADIENT[service.visualCategory];
+
+    return (
+      <Link
+        to={`/services/${service.id}`}
+        className={cn(
+          "block rounded-xl no-underline text-inherit outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          className,
+        )}
+      >
+        <Card className="h-full overflow-hidden border-border/70 transition-shadow hover:shadow-lg">
+          <div className="flex min-w-0 flex-col sm:flex-row">
+            <div
+              className="relative flex h-40 shrink-0 items-center justify-center sm:h-auto sm:w-44 sm:min-h-[11rem]"
+              style={{ background: cover }}
+            >
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.22),transparent_45%)]" />
+              <div
+                className={cn(
+                  "relative text-6xl drop-shadow-md transition-opacity duration-500 ease-out sm:text-7xl",
+                  emojiVisible ? "opacity-100" : "opacity-0",
+                )}
+                aria-hidden
+              >
+                {service.coverEmoji}
+              </div>
+              <div className="absolute left-2 top-2 flex flex-wrap gap-1">
+                {service.isHot && (
+                  <span className="rounded-md bg-orange-500/95 px-2 py-0.5 text-[10px] font-bold text-white shadow">
+                    HOT
+                  </span>
+                )}
+                {service.isNew && (
+                  <span className="rounded-md bg-emerald-500/95 px-2 py-0.5 text-[10px] font-bold text-white shadow">
+                    NEW
+                  </span>
+                )}
+              </div>
+              <div className="absolute bottom-3 left-3 right-3 rounded-md border border-white/15 bg-black/25 px-2 py-1 text-[11px] font-medium text-white/95 backdrop-blur">
+                {service.categoryLabel}
+              </div>
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col p-5 sm:p-6">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className="text-[11px] font-normal">
+                  {service.categoryLabel}
+                </Badge>
+                {service.tags.map((t) => (
+                  <Badge
+                    key={t}
+                    variant="secondary"
+                    className={tagBadgeClass(service.visualCategory)}
+                  >
+                    {t}
+                  </Badge>
+                ))}
+              </div>
+              <h3 className="mt-3 text-lg font-semibold leading-snug tracking-tight">
+                <TitleHighlight title={service.title} keyword={highlightKeyword} />
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                {service.headline}
+              </p>
+              <p className="mt-1 text-sm font-medium text-foreground/90">
+                {service.deliveryLine}
+              </p>
+              <p className="mt-3 text-xs text-muted-foreground">
+                支持企业对公 · 可开发票
+              </p>
+              <div className="mt-3 flex flex-wrap items-baseline gap-2">
+                <span className="text-lg font-bold text-foreground">
+                  {formatPriceFrom(service.priceFrom)}
+                </span>
+              </div>
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <span className={cn(buttonVariants({ size: "sm" }), "pointer-events-none")}>
+                  查看详情
+                </span>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </Link>
+    );
+  }
+
+  const { course, className, highlightKeyword } = props;
 
   const cover = CATEGORY_COVER_GRADIENT[course.category];
   const discount =

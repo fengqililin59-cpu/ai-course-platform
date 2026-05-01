@@ -12,6 +12,15 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
       : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
   );
 
+/** 与主导航结构一致，金色/橙色强调（与紫色会员入口区分） */
+const navClassGold = ({ isActive }: { isActive: boolean }) =>
+  cn(
+    "rounded-md px-2 py-2 text-sm font-medium transition-colors sm:px-3",
+    isActive
+      ? "bg-amber-500/20 text-amber-900 ring-1 ring-amber-500/35 dark:bg-amber-400/15 dark:text-amber-100"
+      : "text-amber-700 hover:bg-amber-500/15 hover:text-amber-900 dark:text-amber-400 dark:hover:bg-amber-400/10 dark:hover:text-amber-200",
+  );
+
 export function SiteHeader() {
   const { phone, setLoginOpen, logout } = useAuth();
 
@@ -45,6 +54,9 @@ export function SiteHeader() {
           <NavLink to="/vip" className={navClass}>
             开通会员
           </NavLink>
+          <NavLink to="/services" className={navClassGold}>
+            AI定制服务
+          </NavLink>
           <NavLink to="/profile" end className={navClass}>
             个人中心
           </NavLink>
@@ -58,6 +70,11 @@ export function SiteHeader() {
           <Button variant="ghost" size="sm" className="px-2 sm:hidden" asChild>
             <NavLink to="/vip" title="开通会员">
               会员
+            </NavLink>
+          </Button>
+          <Button variant="ghost" size="sm" className="px-2 text-amber-700 dark:text-amber-400 sm:hidden" asChild>
+            <NavLink to="/services" title="AI定制服务">
+              定制
             </NavLink>
           </Button>
           <Button variant="ghost" size="sm" className="px-2 sm:hidden" asChild>
