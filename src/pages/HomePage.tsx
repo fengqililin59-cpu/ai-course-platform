@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Briefcase } from "lucide-react";
+import { ArrowRight, Briefcase, Radar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -234,6 +234,40 @@ export function HomePage() {
               <CourseCard key={course.id} course={course} />
             ))}
           </div>
+
+          <Link
+            to="/jobs"
+            className={cn(
+              "group mt-10 block rounded-xl no-underline outline-none transition-shadow",
+              "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+            )}
+          >
+            <Card className="overflow-hidden border-violet-500/30 bg-gradient-to-r from-violet-500/10 via-card to-cyan-500/10 shadow-sm transition-shadow hover:shadow-md">
+              <CardContent className="flex flex-col gap-4 px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-7">
+                <div className="flex min-w-0 items-start gap-4">
+                  <span
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-2xl ring-1 ring-violet-400/30"
+                    aria-hidden
+                  >
+                    🎯
+                  </span>
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-lg font-semibold tracking-tight">
+                      🎯 AI技能就业雷达 — 看看哪些技能最值钱
+                    </p>
+                    <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Radar className="h-4 w-4 shrink-0 text-violet-600 dark:text-violet-400" />
+                      热门岗位、薪资对比与选课小测试
+                    </p>
+                  </div>
+                </div>
+                <span className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary sm:self-center">
+                  立即查看
+                  <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                </span>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
       </section>
 

@@ -6,6 +6,7 @@ require("dotenv").config({ path: path.join(__dirname, ".env") });
 const express = require("express");
 const cors = require("cors");
 const payRouter = require("./routes/pay");
+const jobsAnalysisRouter = require("./routes/jobsAnalysis");
 
 const PORT = Number(process.env.PORT) || 8787;
 
@@ -25,6 +26,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api/pay", payRouter);
+app.use("/api/jobs-analysis", jobsAnalysisRouter);
 
 app.use((err, _req, res, _next) => {
   console.error(err);

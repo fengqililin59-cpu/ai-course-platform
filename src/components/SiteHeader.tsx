@@ -51,6 +51,9 @@ export function SiteHeader() {
           <NavLink to="/courses" end className={navClass}>
             全部课程
           </NavLink>
+          <NavLink to="/jobs" className={navClass}>
+            就业雷达
+          </NavLink>
           <NavLink to="/vip" className={navClass}>
             开通会员
           </NavLink>
@@ -75,6 +78,11 @@ export function SiteHeader() {
           <Button variant="ghost" size="sm" className="px-2 text-amber-700 dark:text-amber-400 sm:hidden" asChild>
             <NavLink to="/services" title="AI定制服务">
               定制
+            </NavLink>
+          </Button>
+          <Button variant="ghost" size="sm" className="px-2 sm:hidden" asChild>
+            <NavLink to="/jobs" title="就业雷达">
+              雷达
             </NavLink>
           </Button>
           <Button variant="ghost" size="sm" className="px-2 sm:hidden" asChild>

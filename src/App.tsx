@@ -18,6 +18,7 @@ import { ServicesListPage } from "@/pages/ServicesListPage";
 import { ServiceDetailPage } from "@/pages/ServiceDetailPage";
 import { ServiceConsultPage } from "@/pages/ServiceConsultPage";
 import { ServiceWechatQrPage } from "@/pages/ServiceWechatQrPage";
+import { JobsRadarPage } from "@/pages/JobsRadarPage";
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
       <Route element={<RootLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/courses" element={<CourseListPage />} />
+        <Route path="/jobs" element={<JobsRadarPage />} />
         <Route path="/courses/:courseId" element={<CourseDetailPage />} />
         <Route path="/pay/success" element={<PaySuccessPage />} />
         <Route path="/vip" element={<VipPage />} />
