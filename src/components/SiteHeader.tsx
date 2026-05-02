@@ -21,6 +21,15 @@ const navClassGold = ({ isActive }: { isActive: boolean }) =>
       : "text-amber-700 hover:bg-amber-500/15 hover:text-amber-900 dark:text-amber-400 dark:hover:bg-amber-400/10 dark:hover:text-amber-200",
   );
 
+/** 入驻合作：绿色强调，与定制服务区分 */
+const navClassGreen = ({ isActive }: { isActive: boolean }) =>
+  cn(
+    "rounded-md px-2 py-2 text-sm font-medium transition-colors sm:px-3",
+    isActive
+      ? "bg-emerald-500/20 text-emerald-900 ring-1 ring-emerald-500/35 dark:bg-emerald-400/15 dark:text-emerald-100"
+      : "text-emerald-700 hover:bg-emerald-500/15 hover:text-emerald-900 dark:text-emerald-400 dark:hover:bg-emerald-400/10 dark:hover:text-emerald-200",
+  );
+
 export function SiteHeader() {
   const { phone, setLoginOpen, logout } = useAuth();
 
@@ -60,6 +69,9 @@ export function SiteHeader() {
           <NavLink to="/services" className={navClassGold}>
             AI定制服务
           </NavLink>
+          <NavLink to="/join" className={navClassGreen}>
+            入驻合作
+          </NavLink>
           <NavLink to="/profile" end className={navClass}>
             个人中心
           </NavLink>
@@ -78,6 +90,11 @@ export function SiteHeader() {
           <Button variant="ghost" size="sm" className="px-2 text-amber-700 dark:text-amber-400 sm:hidden" asChild>
             <NavLink to="/services" title="AI定制服务">
               定制
+            </NavLink>
+          </Button>
+          <Button variant="ghost" size="sm" className="px-2 text-emerald-700 dark:text-emerald-400 sm:hidden" asChild>
+            <NavLink to="/join" title="博主入驻">
+              入驻
             </NavLink>
           </Button>
           <Button variant="ghost" size="sm" className="px-2 sm:hidden" asChild>

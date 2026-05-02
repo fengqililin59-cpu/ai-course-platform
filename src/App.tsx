@@ -19,6 +19,7 @@ import { ServiceDetailPage } from "@/pages/ServiceDetailPage";
 import { ServiceConsultPage } from "@/pages/ServiceConsultPage";
 import { ServiceWechatQrPage } from "@/pages/ServiceWechatQrPage";
 import { JobsRadarPage } from "@/pages/JobsRadarPage";
+import { JoinPage } from "@/pages/JoinPage";
 
 export default function App() {
   return (
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="/services/:serviceId" element={<ServiceDetailPage />} />
         <Route path="/custom-service" element={<CustomServicePage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/join" element={<JoinPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
