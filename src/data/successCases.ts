@@ -16,6 +16,14 @@ export type SuccessCase = {
 
 export const SUCCESS_CASES: SuccessCase[] = [
   {
+    id: "sc-crm-001",
+    title: "中数云 AI 助贷 CRM",
+    clientType: "企业",
+    deliverable: "网站",
+    outcome: "贷款中介全流程管理系统，含智能决策看板、AI 客服、销售跟进，已正式上线运营。访问：crm.syzs.top",
+    tags: ["金融科技", "SaaS", "AI客服", "CRM", "已上线"],
+  },
+  {
     id: "sc-001",
     title: "教育品牌官网与招生落地页",
     clientType: "企业",

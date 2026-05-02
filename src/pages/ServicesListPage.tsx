@@ -348,6 +348,11 @@ export function ServicesListPage() {
                   <p className="font-medium text-foreground">{item.clientType}</p>
                   <p className="text-xs font-medium text-muted-foreground">核心成果</p>
                   <p className="text-foreground/90">{shortOutcome(item.outcome)}</p>
+                  {item.id === "sc-crm-001" && (
+                    <a href="https://crm.syzs.top" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-medium text-violet-600 hover:underline dark:text-violet-400">
+                      查看线上案例 →
+                    </a>
+                  )}
                 </CardContent>
               </Card>
             ))}
