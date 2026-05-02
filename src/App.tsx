@@ -6,6 +6,7 @@ import { AdminLoginPage } from "@/pages/admin/AdminLoginPage";
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
 import { AdminCoursesPage } from "@/pages/admin/AdminCoursesPage";
 import { AdminCourseFormPage } from "@/pages/admin/AdminCourseFormPage";
+import { AdminJoinPage } from "@/pages/admin/AdminJoinPage";
 import { HomePage } from "@/pages/HomePage";
 import { CourseListPage } from "@/pages/CourseListPage";
 import { CourseDetailPage } from "@/pages/CourseDetailPage";
@@ -20,10 +21,27 @@ import { ServiceConsultPage } from "@/pages/ServiceConsultPage";
 import { ServiceWechatQrPage } from "@/pages/ServiceWechatQrPage";
 import { JobsRadarPage } from "@/pages/JobsRadarPage";
 import { JoinPage } from "@/pages/JoinPage";
+import { CreatorRequireAuth } from "@/creator/CreatorAuth";
+import { CreatorLoginPage } from "@/pages/creator/CreatorLoginPage";
+import {
+  CreatorLayout,
+  CreatorOverviewPage,
+} from "@/pages/creator/CreatorOverviewPage";
+import { CreatorCoursesPage } from "@/pages/creator/CreatorCoursesPage";
+import { CreatorEarningsPage } from "@/pages/creator/CreatorEarningsPage";
 
 export default function App() {
   return (
     <Routes>
+      <Route path="/creator/login" element={<CreatorLoginPage />} />
+      <Route path="/creator" element={<CreatorRequireAuth />}>
+        <Route element={<CreatorLayout />}>
+          <Route index element={<CreatorOverviewPage />} />
+          <Route path="courses" element={<CreatorCoursesPage />} />
+          <Route path="earnings" element={<CreatorEarningsPage />} />
+        </Route>
+      </Route>
+
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/admin" element={<AdminRequireAuth />}>
         <Route element={<AdminLayout />}>
@@ -32,6 +50,7 @@ export default function App() {
           <Route path="courses" element={<AdminCoursesPage />} />
           <Route path="courses/new" element={<AdminCourseFormPage />} />
           <Route path="courses/edit/:courseId" element={<AdminCourseFormPage />} />
+          <Route path="join" element={<AdminJoinPage />} />
         </Route>
       </Route>
 

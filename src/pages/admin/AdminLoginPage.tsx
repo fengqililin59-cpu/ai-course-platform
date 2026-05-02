@@ -2,7 +2,7 @@ import * as React from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { adminLogin, isAdminLoggedIn } from "@/admin/AdminAuth";
+import { adminLogin, isAdminLoggedIn, setAdminApiToken } from "@/admin/AdminAuth";
 
 export function AdminLoginPage() {
   const navigate = useNavigate();
@@ -22,6 +22,9 @@ export function AdminLoginPage() {
     setError("");
     if (username === "aike2026" && password === "Aike@2026#Aie0181bdbba9e1f") {
       adminLogin();
+      const bearer =
+        (import.meta.env.VITE_ADMIN_API_BEARER || "Aike@2026#Ai").trim() || "Aike@2026#Ai";
+      setAdminApiToken(bearer);
       navigate(from.startsWith("/admin") ? from : "/admin/dashboard", { replace: true });
       return;
     }

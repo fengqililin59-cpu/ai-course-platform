@@ -94,7 +94,7 @@ export function JoinPage() {
     document.title = "博主入驻申请 - 智学 AI";
   }, []);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const payload: JoinApplicationPayload = {
       name: name.trim(),
@@ -106,6 +106,29 @@ export function JoinPage() {
       fans: fans.trim(),
     };
     console.log(payload);
+    try {
+      const res = await fetch("/api/creator/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: payload.name,
+          wechat: payload.wechat,
+          expertise: payload.expertise,
+          courseName: payload.courseName,
+          price: payload.price,
+          bio: payload.bio,
+          fans: payload.fans,
+        }),
+      });
+      const data = (await res.json()) as { success?: boolean; message?: string };
+      if (!res.ok || data.success === false) {
+        showToast(data.message || "提交失败，请稍后重试", "error");
+        return;
+      }
+    } catch {
+      showToast("网络异常，请检查连接后重试", "error");
+      return;
+    }
     showToast("申请已提交！我们将在3个工作日内通过微信联系你", "success");
     setName("");
     setWechat("");

@@ -7,6 +7,8 @@ const express = require("express");
 const cors = require("cors");
 const payRouter = require("./routes/pay");
 const jobsAnalysisRouter = require("./routes/jobsAnalysis");
+const creatorRouter = require("./routes/creator");
+const adminApiRouter = require("./routes/admin");
 
 const PORT = Number(process.env.PORT) || 8787;
 
@@ -27,6 +29,8 @@ app.get("/health", (_req, res) => {
 
 app.use("/api/pay", payRouter);
 app.use("/api/jobs-analysis", jobsAnalysisRouter);
+app.use("/api/creator", creatorRouter);
+app.use("/api/admin", adminApiRouter);
 
 app.use((err, _req, res, _next) => {
   console.error(err);

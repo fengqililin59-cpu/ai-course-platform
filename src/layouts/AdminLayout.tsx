@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LogOut, LayoutDashboard, BookOpen, PlusCircle } from "lucide-react";
+import { LogOut, LayoutDashboard, BookOpen, PlusCircle, Users } from "lucide-react";
 import { adminLogout } from "@/admin/AdminAuth";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +40,10 @@ export function AdminLayout() {
           <NavLink to="/admin/courses/new" className={navLinkClass}>
             <PlusCircle className="h-4 w-4 shrink-0 opacity-80" />
             添加课程
+          </NavLink>
+          <NavLink to="/admin/join" className={navLinkClass}>
+            <Users className="h-4 w-4 shrink-0 opacity-80" />
+            入驻审核
           </NavLink>
         </nav>
         <div className="border-t border-slate-800 p-3 text-xs text-slate-500">
@@ -84,6 +88,17 @@ export function AdminLayout() {
             }
           >
             添加
+          </NavLink>
+          <NavLink
+            to="/admin/join"
+            className={({ isActive }) =>
+              cn(
+                "shrink-0 rounded-md px-3 py-2 text-xs font-medium",
+                isActive ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white" : "text-slate-600 dark:text-slate-400",
+              )
+            }
+          >
+            入驻
           </NavLink>
         </nav>
         <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b border-slate-200 bg-white/90 px-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90 md:px-6">
