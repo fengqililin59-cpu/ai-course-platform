@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Check, Phone, Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -94,8 +94,15 @@ function shortOutcome(text: string): string {
   return `${t.slice(0, 35)}…`;
 }
 
+/** 展示与复制用；可在 .env / .env.production 中设置 VITE_WECHAT_ID */
+function wechatIdFromEnv(): string {
+  const v = (import.meta.env.VITE_WECHAT_ID as string | undefined)?.trim();
+  return v && v.length > 0 ? v : "你的微信号";
+}
+
 export function ServicesListPage() {
   const { showToast } = useToast();
+  const navigate = useNavigate();
 
   React.useEffect(() => {
     document.title = "AI 定制服务 - AIlearn Pro";
@@ -121,12 +128,14 @@ export function ServicesListPage() {
       submittedAt: new Date().toISOString(),
     };
     console.log("[需求提交表单]", payload);
-    showToast("提交成功", "success");
+    const wx = wechatIdFromEnv();
+    showToast(`已收到您的需求！请添加微信：${wx} 获取报价方案`, "success");
     setReqName("");
     setReqContact("");
     setReqType(NEED_TYPE_OPTIONS[0].value);
     setReqBudget(BUDGET_OPTIONS[0].value);
     setReqDesc("");
+    navigate("/services/wechat", { state: { fromForm: true }, replace: true });
   }
 
   const showcaseCases = SUCCESS_CASES.slice(0, 3);

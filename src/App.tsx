@@ -17,6 +17,7 @@ import { CustomServicePage } from "@/pages/CustomServicePage";
 import { ServicesListPage } from "@/pages/ServicesListPage";
 import { ServiceDetailPage } from "@/pages/ServiceDetailPage";
 import { ServiceConsultPage } from "@/pages/ServiceConsultPage";
+import { ServiceWechatQrPage } from "@/pages/ServiceWechatQrPage";
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="/vip" element={<VipPage />} />
         <Route path="/services" element={<ServicesListPage />} />
         <Route path="/services/consult" element={<ServiceConsultPage />} />
+        <Route path="/services/wechat" element={<ServiceWechatQrPage />} />
         <Route path="/services/:serviceId" element={<ServiceDetailPage />} />
         <Route path="/custom-service" element={<CustomServicePage />} />
         <Route path="/profile" element={<ProfilePage />} />

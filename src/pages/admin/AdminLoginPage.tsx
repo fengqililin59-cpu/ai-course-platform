@@ -20,12 +20,12 @@ export function AdminLoginPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (username === "admin" && password === "admin888") {
+    if (username === "aike2026" && password === "Aike@2026#Aie0181bdbba9e1f") {
       adminLogin();
       navigate(from.startsWith("/admin") ? from : "/admin/dashboard", { replace: true });
       return;
     }
-    setError("用户名或密码错误");
+    setError("账号或密码错误");
   }
 
   const inputClass =
@@ -50,7 +50,7 @@ export function AdminLoginPage() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className={inputClass}
-                placeholder="admin"
+                placeholder="请输入"
                 required
               />
             </div>
