@@ -311,7 +311,7 @@ export function HomePage() {
                     </p>
                     <div className="mt-4">
                       <a href="https://crm.syzs.top" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3 rounded-xl border border-amber-400/20 bg-amber-500/[0.08] px-4 py-3 transition-colors hover:border-amber-400/40 hover:bg-amber-500/15 no-underline">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-500/20 text-xl">{"🏦"}</span>
+                        <img src="/crm-logo.png" alt="中数云AI助贷CRM" className="h-10 w-10 shrink-0 rounded-lg object-contain bg-white p-0.5" />
                         <div className="min-w-0 flex-1">
                           <p className="flex items-center gap-1.5 text-sm font-semibold text-amber-100">中数云 AI 助贷 CRM<span className="ml-1.5 inline-flex items-center rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-medium text-emerald-300">已上线</span></p>
                           <p className="mt-0.5 text-xs text-amber-200/70">贷款中介全流程管理 · 智能决策看板 · AI 客服</p>
