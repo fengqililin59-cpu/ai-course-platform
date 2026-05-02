@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { COURSES } from "@/data/courses";
+import { useCoursesCatalog } from "@/contexts/CoursesCatalogContext";
 import { CourseCard } from "@/components/CourseCard";
 import type { CourseCategory } from "@/data/courses";
 
@@ -50,17 +50,19 @@ const categoryEntries: {
 ];
 
 export function HomePage() {
+  const { courses } = useCoursesCatalog();
+
   React.useEffect(() => {
     document.title = "AIlearn Pro - AI商业课程平台";
   }, []);
 
-  const courseCount = COURSES.length;
+  const courseCount = courses.length;
 
   const hotCourses = React.useMemo(() => {
-    const hot = COURSES.filter((c) => c.isHot);
-    const list = hot.length > 0 ? hot : COURSES;
+    const hot = courses.filter((c) => c.isHot);
+    const list = hot.length > 0 ? hot : courses;
     return list.slice(0, 6);
-  }, []);
+  }, [courses]);
 
   return (
     <main className="min-w-0">

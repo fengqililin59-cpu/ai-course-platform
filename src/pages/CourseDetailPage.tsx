@@ -11,12 +11,12 @@ import {
   User,
 } from "lucide-react";
 import {
-  getCourseById,
   CATEGORY_COVER_GRADIENT,
   formatCoursePrice,
   formatStudentCount,
   type CourseCategory,
 } from "@/data/courses";
+import { useCoursesCatalog } from "@/contexts/CoursesCatalogContext";
 import { copyToClipboard } from "@/lib/copyToClipboard";
 import {
   readCourseProgress,
@@ -134,6 +134,7 @@ function StarRatingRow({
 
 export function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
+  const { getCourseById } = useCoursesCatalog();
   const { phone, setLoginOpen } = useAuth();
   const { showToast } = useToast();
   const { isPurchased, isFavorite, toggleFavorite } = useCourseUser();

@@ -834,10 +834,6 @@ function assertReviews(coursesList: Course[]) {
 assertChapterCount(COURSES);
 assertReviews(COURSES);
 
-export function getCourseById(id: string): Course | undefined {
-  return COURSES.find((c) => c.id === id);
-}
-
 export const membershipPlans = [
   {
     id: "p1",

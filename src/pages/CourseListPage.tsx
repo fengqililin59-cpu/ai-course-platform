@@ -1,7 +1,8 @@
 import * as React from "react";
 import { useSearchParams } from "react-router-dom";
 import { BookOpen, Search, X, XCircle } from "lucide-react";
-import { COURSES, type CourseCategory, type Course } from "@/data/courses";
+import { useCoursesCatalog } from "@/contexts/CoursesCatalogContext";
+import { type CourseCategory, type Course } from "@/data/courses";
 import { CourseCard } from "@/components/CourseCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -75,6 +76,8 @@ function countLabel(
 }
 
 export function CourseListPage() {
+  const { courses: COURSES } = useCoursesCatalog();
+
   React.useEffect(() => {
     document.title = "全部课程 - AIlearn Pro";
   }, []);

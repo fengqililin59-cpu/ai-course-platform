@@ -1,5 +1,11 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { RootLayout } from "@/layouts/RootLayout";
+import { AdminLayout } from "@/layouts/AdminLayout";
+import { AdminRequireAuth } from "@/admin/AdminAuth";
+import { AdminLoginPage } from "@/pages/admin/AdminLoginPage";
+import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
+import { AdminCoursesPage } from "@/pages/admin/AdminCoursesPage";
+import { AdminCourseFormPage } from "@/pages/admin/AdminCourseFormPage";
 import { HomePage } from "@/pages/HomePage";
 import { CourseListPage } from "@/pages/CourseListPage";
 import { CourseDetailPage } from "@/pages/CourseDetailPage";
@@ -15,6 +21,17 @@ import { ServiceConsultPage } from "@/pages/ServiceConsultPage";
 export default function App() {
   return (
     <Routes>
+      <Route path="/admin/login" element={<AdminLoginPage />} />
+      <Route path="/admin" element={<AdminRequireAuth />}>
+        <Route element={<AdminLayout />}>
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route path="courses" element={<AdminCoursesPage />} />
+          <Route path="courses/new" element={<AdminCourseFormPage />} />
+          <Route path="courses/edit/:courseId" element={<AdminCourseFormPage />} />
+        </Route>
+      </Route>
+
       <Route element={<RootLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/courses" element={<CourseListPage />} />

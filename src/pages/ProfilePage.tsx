@@ -17,7 +17,8 @@ import {
   COURSE_PROGRESS_UPDATED_EVENT,
   readCourseProgress,
 } from "@/lib/courseProgress";
-import { COURSES, getCourseById, type Course } from "@/data/courses";
+import type { Course } from "@/data/courses";
+import { useCoursesCatalog } from "@/contexts/CoursesCatalogContext";
 
 function maskPhone(phone: string): string {
   const p = phone.trim();
@@ -65,35 +66,39 @@ function profileProgressStyle(pct: number) {
   };
 }
 
-const sampleOrders = [
-  {
-    orderNo: "38472910",
-    courseName: COURSES[0]?.title ?? "课程",
-    amount: "¥199",
-    status: "已支付",
-    date: "2026-04-02",
-  },
-  {
-    orderNo: "92837465",
-    courseName: COURSES[1]?.title ?? "课程",
-    amount: "¥149",
-    status: "已支付",
-    date: "2026-03-18",
-  },
-  {
-    orderNo: "10293847",
-    courseName: COURSES[2]?.title ?? "课程",
-    amount: "¥259",
-    status: "已支付",
-    date: "2026-02-26",
-  },
-];
-
 type ProfileTab = "courses" | "orders";
 
 export function ProfilePage() {
   const { phone, membership, setLoginOpen, logout } = useAuth();
   const { purchasedIds } = useCourseUser();
+  const { courses, getCourseById } = useCoursesCatalog();
+
+  const sampleOrders = React.useMemo(
+    () => [
+      {
+        orderNo: "38472910",
+        courseName: courses[0]?.title ?? "课程",
+        amount: "¥199",
+        status: "已支付",
+        date: "2026-04-02",
+      },
+      {
+        orderNo: "92837465",
+        courseName: courses[1]?.title ?? "课程",
+        amount: "¥149",
+        status: "已支付",
+        date: "2026-03-18",
+      },
+      {
+        orderNo: "10293847",
+        courseName: courses[2]?.title ?? "课程",
+        amount: "¥259",
+        status: "已支付",
+        date: "2026-02-26",
+      },
+    ],
+    [courses],
+  );
 
   React.useEffect(() => {
     document.title = "个人中心 - AIlearn Pro";
@@ -117,7 +122,7 @@ export function ProfilePage() {
       purchasedIds
         .map((id) => getCourseById(id))
         .filter((c): c is Course => Boolean(c)),
-    [purchasedIds],
+    [purchasedIds, getCourseById],
   );
 
   const learningStats = React.useMemo(() => {
