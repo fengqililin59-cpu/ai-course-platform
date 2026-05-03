@@ -1,5 +1,7 @@
 import { CREATOR_TOKEN_KEY } from "@/creator/CreatorAuth";
 import type { CreatorProfile } from "@/creator/CreatorAuth";
+import { resolveApiUrl } from "@/lib/apiBase";
+import { setSiteUserToken } from "@/lib/siteUserAuth";
 
 async function parseJson<T>(res: Response): Promise<T> {
   const text = await res.text();
@@ -34,7 +36,7 @@ function authHeaders(): HeadersInit {
 }
 
 export async function creatorSendCode(phone: string): Promise<void> {
-  const res = await fetch("/api/creator/send-code", {
+  const res = await fetch(resolveApiUrl("/api/creator/send-code"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ phone }),
@@ -48,13 +50,14 @@ export async function creatorSendCode(phone: string): Promise<void> {
 export type CreatorLoginResult = {
   token: string;
   creator: CreatorProfile;
+  siteToken?: string;
 };
 
 export async function creatorLogin(
   phone: string,
   code: string,
 ): Promise<CreatorLoginResult> {
-  const res = await fetch("/api/creator/login", {
+  const res = await fetch(resolveApiUrl("/api/creator/login"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ phone, code }),
@@ -63,15 +66,21 @@ export async function creatorLogin(
     success?: boolean;
     message?: string;
     token?: string;
+    siteToken?: string;
     creator?: CreatorProfile;
+    data?: { token?: string; siteToken?: string; creator?: CreatorProfile };
   }>(res);
   if (!res.ok || data.success === false) {
     throw new Error(errMessage(data, "登录失败"));
   }
-  if (!data.token || !data.creator) {
+  const token = data.data?.token ?? data.token;
+  const creator = data.data?.creator ?? data.creator;
+  const siteToken = data.data?.siteToken ?? data.siteToken;
+  if (!token || !creator) {
     throw new Error("登录响应异常");
   }
-  return { token: data.token, creator: data.creator };
+  if (siteToken) setSiteUserToken(siteToken);
+  return { token, creator, siteToken };
 }
 
 export type CreatorStats = {
@@ -95,7 +104,7 @@ type StatsPayload = {
 };
 
 export async function fetchCreatorStats(): Promise<CreatorStats> {
-  const res = await fetch("/api/creator/stats", { headers: authHeaders() });
+  const res = await fetch(resolveApiUrl("/api/creator/stats"), { headers: authHeaders() });
   const data = await parseJson<{
     success?: boolean;
     data?: StatsPayload;
@@ -132,7 +141,7 @@ type OrderApiRow = {
 };
 
 export async function fetchCreatorOrders(): Promise<CreatorOrderRow[]> {
-  const res = await fetch("/api/creator/orders", { headers: authHeaders() });
+  const res = await fetch(resolveApiUrl("/api/creator/orders"), { headers: authHeaders() });
   const data = await parseJson<{
     success?: boolean;
     data?: OrderApiRow[];
@@ -159,6 +168,11 @@ export type CreatorCourseRow = {
   status: CreatorCourseStatus;
   salesCount: number;
   createdAt: string;
+  /** 课程简介，对应库 description */
+  description: string;
+  videoUrl: string;
+  /** 逗号分隔，供就业雷达岗位推荐匹配 */
+  tags: string;
 };
 
 type CourseApiRow = {
@@ -169,6 +183,9 @@ type CourseApiRow = {
   students: number;
   earnings: number;
   coverUrl: string | null;
+  description?: string;
+  videoUrl?: string;
+  tags?: string;
   createdAt: string;
 };
 
@@ -180,7 +197,7 @@ function normalizeCourseStatus(s: string): CreatorCourseStatus {
 }
 
 export async function fetchCreatorCourses(): Promise<CreatorCourseRow[]> {
-  const res = await fetch("/api/creator/courses", { headers: authHeaders() });
+  const res = await fetch(resolveApiUrl("/api/creator/courses"), { headers: authHeaders() });
   const data = await parseJson<{
     success?: boolean;
     data?: CourseApiRow[];
@@ -196,6 +213,9 @@ export async function fetchCreatorCourses(): Promise<CreatorCourseRow[]> {
     status: normalizeCourseStatus(c.status),
     salesCount: Number(c.students) || 0,
     createdAt: c.createdAt,
+    description: String(c.description ?? ""),
+    videoUrl: String(c.videoUrl ?? ""),
+    tags: String(c.tags ?? ""),
   }));
 }
 
@@ -203,14 +223,18 @@ export async function createCreatorCourse(body: {
   title: string;
   priceYuan: number;
   summary?: string;
+  videoUrl?: string;
+  tags?: string;
 }): Promise<void> {
-  const res = await fetch("/api/creator/courses", {
+  const res = await fetch(resolveApiUrl("/api/creator/courses"), {
     method: "POST",
     headers: authHeaders(),
     body: JSON.stringify({
       title: body.title,
       price: body.priceYuan,
       description: body.summary ?? "",
+      videoUrl: body.videoUrl ?? "",
+      tags: body.tags ?? "",
     }),
   });
   const data = await parseJson<{ success?: boolean; message?: string }>(res);
@@ -219,11 +243,38 @@ export async function createCreatorCourse(body: {
   }
 }
 
+export async function updateCreatorCourse(
+  id: string,
+  body: {
+    title: string;
+    priceYuan: number;
+    summary?: string;
+    videoUrl?: string;
+    tags?: string;
+  },
+): Promise<void> {
+  const res = await fetch(resolveApiUrl(`/api/creator/courses/${encodeURIComponent(id)}`), {
+    method: "PUT",
+    headers: authHeaders(),
+    body: JSON.stringify({
+      title: body.title,
+      price: body.priceYuan,
+      description: body.summary ?? "",
+      videoUrl: body.videoUrl ?? "",
+      tags: body.tags ?? "",
+    }),
+  });
+  const data = await parseJson<{ success?: boolean; message?: string }>(res);
+  if (!res.ok || data.success === false) {
+    throw new Error(errMessage(data, "保存失败"));
+  }
+}
+
 export async function updateCreatorCourseStatus(
   id: string,
   status: Extract<CreatorCourseStatus, "draft" | "published" | "offline">,
 ): Promise<void> {
-  const res = await fetch(`/api/creator/courses/${encodeURIComponent(id)}/status`, {
+  const res = await fetch(resolveApiUrl(`/api/creator/courses/${encodeURIComponent(id)}/status`), {
     method: "PUT",
     headers: authHeaders(),
     body: JSON.stringify({ status }),
@@ -268,7 +319,7 @@ type EarningApiSummary = {
 };
 
 export async function fetchCreatorEarnings(): Promise<CreatorEarningsPayload> {
-  const res = await fetch("/api/creator/earnings", { headers: authHeaders() });
+  const res = await fetch(resolveApiUrl("/api/creator/earnings"), { headers: authHeaders() });
   const data = await parseJson<{
     success?: boolean;
     records?: EarningApiRecord[];

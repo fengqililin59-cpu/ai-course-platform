@@ -1,3 +1,4 @@
+import * as React from "react";
 import { Link, NavLink } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,8 +34,28 @@ const navClassGreen = ({ isActive }: { isActive: boolean }) =>
 export function SiteHeader() {
   const { phone, setLoginOpen, logout } = useAuth();
 
-  const avatarDigits =
-    phone && phone.length >= 2 ? phone.slice(-2) : "—";
+  const avatarDigits = React.useMemo(() => {
+    if (!phone || phone.length < 2) return "—";
+    if (phone.startsWith("mail:")) {
+      const e = phone.slice(5);
+      const at = e.indexOf("@");
+      const local = at > 0 ? e.slice(0, at) : e;
+      return local.length >= 2 ? local.slice(-2) : "邮";
+    }
+    if (phone.startsWith("wx:")) {
+      const id = phone.slice(3);
+      return id.length >= 2 ? id.slice(-2) : "微";
+    }
+    if (phone.startsWith("gh:")) {
+      const id = phone.slice(3);
+      return id.length >= 2 ? id.slice(-2) : "G";
+    }
+    if (phone.startsWith("google:")) {
+      const id = phone.slice(7);
+      return id.length >= 2 ? id.slice(-2) : "Go";
+    }
+    return phone.slice(-2);
+  }, [phone]);
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md">

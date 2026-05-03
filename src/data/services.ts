@@ -6,6 +6,7 @@ export type ServiceFilterId =
   | "web"
   | "miniprogram"
   | "biz"
+  | "aimedia"
   | "ui"
   | "auto";
 
@@ -49,6 +50,7 @@ export const SERVICE_FILTERS: { id: ServiceFilterId; label: string }[] = [
   { id: "web", label: "网站开发" },
   { id: "miniprogram", label: "小程序" },
   { id: "biz", label: "商业方案" },
+  { id: "aimedia", label: "AI视觉" },
   { id: "ui", label: "UI设计" },
   { id: "auto", label: "自动化" },
 ];
@@ -165,6 +167,40 @@ export const SERVICE_OFFERS: ServiceDetail[] = [
       },
     ],
     priceNote: "深度财务模型与法务条款需单独报价。",
+  },
+  {
+    id: "ai-vision",
+    title: "AI视觉内容创作",
+    longTitle: "AI 图片与视频内容制作",
+    headline: "文生图 · 短视频 · 批量营销素材",
+    deliveryLine: "按项目 3–10 天",
+    priceFrom: 2800,
+    filter: "aimedia",
+    categoryLabel: "AI视觉",
+    tags: ["文生图", "视频剪辑", "商品展示"],
+    coverEmoji: "🎨",
+    visualCategory: "prompt",
+    isNew: true,
+    heroCaption: "风格参考与成片示意（可替换为实际案例）",
+    intro:
+      "面向电商、品牌社媒与获客落地页：AI 图片生成、短视频剪辑与简单特效、批量产出统一画风的营销图与商品展示视频。可按品牌调性做风格约束与模板复用。",
+    pillTags: ["AI绘图", "短视频", "批量素材"],
+    phases: [
+      { title: "需求与参考风格", schedule: "1 天" },
+      { title: "脚本/分镜与首版出片", schedule: "2–5 天" },
+      { title: "修改定稿与交付包", schedule: "1–2 天" },
+    ],
+    cases: [
+      {
+        title: "商品主图与详情图批量（占位）",
+        body: "同一 SKU 多场景、多尺寸导出，便于上架与广告投放。",
+      },
+      {
+        title: "社媒短视频系列（占位）",
+        body: "15–60 秒竖版视频，字幕与片尾品牌条可模板化。",
+      },
+    ],
+    priceNote: "复杂实拍合成、三维渲染与明星肖像授权类需求单独评估。",
   },
   {
     id: "svc-ui-kit",

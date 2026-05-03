@@ -1,5 +1,19 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LogOut, LayoutDashboard, BookOpen, PlusCircle, Users } from "lucide-react";
+import {
+  LogOut,
+  LayoutDashboard,
+  BookOpen,
+  PlusCircle,
+  Users,
+  Image,
+  BarChart3,
+  Link2,
+  Activity,
+  Bell,
+  TicketPercent,
+  Zap,
+  Wallet,
+} from "lucide-react";
 import { adminLogout } from "@/admin/AdminAuth";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +47,18 @@ export function AdminLayout() {
             <LayoutDashboard className="h-4 w-4 shrink-0 opacity-80" />
             数据总览
           </NavLink>
+          <NavLink to="/admin/analytics" className={navLinkClass}>
+            <BarChart3 className="h-4 w-4 shrink-0 opacity-80" />
+            数据分析
+          </NavLink>
+          <NavLink to="/admin/dashboard-metrics" className={navLinkClass}>
+            <Activity className="h-4 w-4 shrink-0 opacity-80" />
+            核心指标
+          </NavLink>
+          <NavLink to="/admin/notification-settings" className={navLinkClass}>
+            <Bell className="h-4 w-4 shrink-0 opacity-80" />
+            通知设置
+          </NavLink>
           <NavLink to="/admin/courses" className={navLinkClass}>
             <BookOpen className="h-4 w-4 shrink-0 opacity-80" />
             课程管理
@@ -44,6 +70,26 @@ export function AdminLayout() {
           <NavLink to="/admin/join" className={navLinkClass}>
             <Users className="h-4 w-4 shrink-0 opacity-80" />
             入驻审核
+          </NavLink>
+          <NavLink to="/admin/vision-consultations" className={navLinkClass}>
+            <Image className="h-4 w-4 shrink-0 opacity-80" />
+            视觉咨询
+          </NavLink>
+          <NavLink to="/admin/share-links" className={navLinkClass}>
+            <Link2 className="h-4 w-4 shrink-0 opacity-80" />
+            分享短链
+          </NavLink>
+          <NavLink to="/admin/coupons" className={navLinkClass}>
+            <TicketPercent className="h-4 w-4 shrink-0 opacity-80" />
+            优惠券
+          </NavLink>
+          <NavLink to="/admin/seckill" className={navLinkClass}>
+            <Zap className="h-4 w-4 shrink-0 opacity-80" />
+            秒杀活动
+          </NavLink>
+          <NavLink to="/admin/withdrawals" className={navLinkClass}>
+            <Wallet className="h-4 w-4 shrink-0 opacity-80" />
+            提现审核
           </NavLink>
         </nav>
         <div className="border-t border-slate-800 p-3 text-xs text-slate-500">
@@ -66,6 +112,39 @@ export function AdminLayout() {
             }
           >
             总览
+          </NavLink>
+          <NavLink
+            to="/admin/analytics"
+            className={({ isActive }) =>
+              cn(
+                "shrink-0 rounded-md px-3 py-2 text-xs font-medium",
+                isActive ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white" : "text-slate-600 dark:text-slate-400",
+              )
+            }
+          >
+            分析
+          </NavLink>
+          <NavLink
+            to="/admin/dashboard-metrics"
+            className={({ isActive }) =>
+              cn(
+                "shrink-0 rounded-md px-3 py-2 text-xs font-medium",
+                isActive ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white" : "text-slate-600 dark:text-slate-400",
+              )
+            }
+          >
+            指标
+          </NavLink>
+          <NavLink
+            to="/admin/notification-settings"
+            className={({ isActive }) =>
+              cn(
+                "shrink-0 rounded-md px-3 py-2 text-xs font-medium",
+                isActive ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white" : "text-slate-600 dark:text-slate-400",
+              )
+            }
+          >
+            通知
           </NavLink>
           <NavLink
             to="/admin/courses"
@@ -99,6 +178,61 @@ export function AdminLayout() {
             }
           >
             入驻
+          </NavLink>
+          <NavLink
+            to="/admin/vision-consultations"
+            className={({ isActive }) =>
+              cn(
+                "shrink-0 rounded-md px-3 py-2 text-xs font-medium",
+                isActive ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white" : "text-slate-600 dark:text-slate-400",
+              )
+            }
+          >
+            视觉
+          </NavLink>
+          <NavLink
+            to="/admin/share-links"
+            className={({ isActive }) =>
+              cn(
+                "shrink-0 rounded-md px-3 py-2 text-xs font-medium",
+                isActive ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white" : "text-slate-600 dark:text-slate-400",
+              )
+            }
+          >
+            短链
+          </NavLink>
+          <NavLink
+            to="/admin/coupons"
+            className={({ isActive }) =>
+              cn(
+                "shrink-0 rounded-md px-3 py-2 text-xs font-medium",
+                isActive ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white" : "text-slate-600 dark:text-slate-400",
+              )
+            }
+          >
+            券
+          </NavLink>
+          <NavLink
+            to="/admin/seckill"
+            className={({ isActive }) =>
+              cn(
+                "shrink-0 rounded-md px-3 py-2 text-xs font-medium",
+                isActive ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white" : "text-slate-600 dark:text-slate-400",
+              )
+            }
+          >
+            秒杀
+          </NavLink>
+          <NavLink
+            to="/admin/withdrawals"
+            className={({ isActive }) =>
+              cn(
+                "shrink-0 rounded-md px-3 py-2 text-xs font-medium",
+                isActive ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white" : "text-slate-600 dark:text-slate-400",
+              )
+            }
+          >
+            提现
           </NavLink>
         </nav>
         <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b border-slate-200 bg-white/90 px-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90 md:px-6">

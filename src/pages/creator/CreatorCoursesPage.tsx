@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import {
   createCreatorCourse,
   fetchCreatorCourses,
+  updateCreatorCourse,
   updateCreatorCourseStatus,
   type CreatorCourseRow,
 } from "@/lib/creatorApi";
@@ -26,7 +27,18 @@ export function CreatorCoursesPage() {
   const [title, setTitle] = React.useState("");
   const [priceYuan, setPriceYuan] = React.useState("");
   const [summary, setSummary] = React.useState("");
+  const [createTags, setCreateTags] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
+
+  const [edit, setEdit] = React.useState<{
+    id: string;
+    title: string;
+    priceYuan: string;
+    summary: string;
+    tags: string;
+    videoUrl: string;
+  } | null>(null);
+  const [editSaving, setEditSaving] = React.useState(false);
 
   React.useEffect(() => {
     document.title = "课程管理 - 创作者中心";
@@ -59,15 +71,52 @@ export function CreatorCoursesPage() {
         title: title.trim(),
         priceYuan: price,
         summary: summary.trim() || undefined,
+        tags: createTags.trim() || undefined,
       });
       await load();
       setTitle("");
       setPriceYuan("");
       setSummary("");
+      setCreateTags("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "创建失败");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  function openEdit(row: CreatorCourseRow) {
+    setEdit({
+      id: row.id,
+      title: row.title,
+      priceYuan: String(row.priceYuan),
+      summary: row.description,
+      tags: row.tags,
+      videoUrl: row.videoUrl,
+    });
+  }
+
+  async function handleEditSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!edit) return;
+    const price = Number(edit.priceYuan);
+    if (!edit.title.trim() || Number.isNaN(price)) return;
+    setEditSaving(true);
+    setError("");
+    try {
+      await updateCreatorCourse(edit.id, {
+        title: edit.title.trim(),
+        priceYuan: price,
+        summary: edit.summary.trim() || undefined,
+        tags: edit.tags.trim() || undefined,
+        videoUrl: edit.videoUrl.trim() || undefined,
+      });
+      await load();
+      setEdit(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "保存失败");
+    } finally {
+      setEditSaving(false);
     }
   }
 
@@ -155,6 +204,22 @@ export function CreatorCoursesPage() {
               />
             </div>
             <div className="sm:col-span-2">
+              <label htmlFor="cc-tags" className="text-sm font-medium">
+                标签（选填，逗号分隔）
+              </label>
+              <input
+                id="cc-tags"
+                type="text"
+                value={createTags}
+                onChange={(e) => setCreateTags(e.target.value)}
+                className={cn(inputClass, "mt-1.5")}
+                placeholder="例如：ChatGPT, Python, 提示词"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                用于就业雷达岗位与课程的匹配推荐；多个标签建议用英文逗号分隔。
+              </p>
+            </div>
+            <div className="sm:col-span-2">
               <Button type="submit" disabled={submitting}>
                 {submitting ? "提交中…" : "创建课程"}
               </Button>
@@ -162,6 +227,110 @@ export function CreatorCoursesPage() {
           </form>
         </CardContent>
       </Card>
+
+      {edit ? (
+        <Card className="border-slate-200 shadow-sm dark:border-slate-800">
+          <CardHeader>
+            <CardTitle className="text-lg">编辑课程</CardTitle>
+            <CardDescription>
+              保存将调用 PUT /api/creator/courses/{edit.id}（含标签与视频链接）
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form className="grid gap-4 sm:grid-cols-2" onSubmit={(e) => void handleEditSave(e)}>
+              <div className="sm:col-span-2">
+                <label htmlFor="ce-title" className="text-sm font-medium">
+                  课程名称
+                </label>
+                <input
+                  id="ce-title"
+                  value={edit.title}
+                  onChange={(e) => setEdit((s) => (s ? { ...s, title: e.target.value } : s))}
+                  className={cn(inputClass, "mt-1.5")}
+                  required
+                  minLength={2}
+                />
+              </div>
+              <div>
+                <label htmlFor="ce-price" className="text-sm font-medium">
+                  售价（元）
+                </label>
+                <input
+                  id="ce-price"
+                  inputMode="decimal"
+                  value={edit.priceYuan}
+                  onChange={(e) =>
+                    setEdit((s) => (s ? { ...s, priceYuan: e.target.value } : s))
+                  }
+                  className={cn(inputClass, "mt-1.5")}
+                  required
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label htmlFor="ce-sum" className="text-sm font-medium">
+                  简介
+                </label>
+                <textarea
+                  id="ce-sum"
+                  value={edit.summary}
+                  onChange={(e) =>
+                    setEdit((s) => (s ? { ...s, summary: e.target.value } : s))
+                  }
+                  className={cn(inputClass, "mt-1.5 min-h-[88px] resize-y")}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label htmlFor="ce-tags" className="text-sm font-medium">
+                  标签（逗号分隔）
+                </label>
+                <input
+                  id="ce-tags"
+                  type="text"
+                  value={edit.tags}
+                  onChange={(e) => setEdit((s) => (s ? { ...s, tags: e.target.value } : s))}
+                  className={cn(inputClass, "mt-1.5")}
+                  placeholder="例如：ChatGPT, Python, 提示词"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  用于就业雷达岗位与课程的匹配推荐。
+                </p>
+              </div>
+              <div className="sm:col-span-2">
+                <label htmlFor="ce-video" className="text-sm font-medium">
+                  视频链接（选填）
+                </label>
+                <input
+                  id="ce-video"
+                  type="url"
+                  inputMode="url"
+                  value={edit.videoUrl}
+                  onChange={(e) =>
+                    setEdit((s) => (s ? { ...s, videoUrl: e.target.value } : s))
+                  }
+                  className={cn(inputClass, "mt-1.5")}
+                  placeholder="https://..."
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  试看或完整视频地址，将写入课程库的 video_url 字段。
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2 sm:col-span-2">
+                <Button type="submit" disabled={editSaving}>
+                  {editSaving ? "保存中…" : "保存修改"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={editSaving}
+                  onClick={() => setEdit(null)}
+                >
+                  取消
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card className="border-slate-200 shadow-sm dark:border-slate-800">
         <CardHeader className="pb-3">
@@ -214,14 +383,24 @@ export function CreatorCoursesPage() {
                         </Badge>
                       </td>
                       <td className="px-4 py-3">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => void toggleStatus(c)}
-                        >
-                          {c.status === "published" ? "下架" : "上架"}
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => openEdit(c)}
+                          >
+                            编辑
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void toggleStatus(c)}
+                          >
+                            {c.status === "published" ? "下架" : "上架"}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))

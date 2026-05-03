@@ -10,6 +10,7 @@ const NEED_TYPES = [
   { value: "web", label: "网站" },
   { value: "miniprogram", label: "小程序" },
   { value: "biz", label: "商业方案" },
+  { value: "aimedia", label: "AI视觉内容" },
   { value: "design", label: "设计" },
   { value: "other", label: "其他" },
 ] as const;

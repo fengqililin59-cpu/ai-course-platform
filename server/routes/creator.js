@@ -4,10 +4,9 @@ const crypto = require("node:crypto");
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
+const { signSitePayload } = require("../lib/siteJwt");
 
-// ─── 验证码存储（内存，60秒过期）────────────────────────────
-/** @type {Map<string, { code: string, exp: number }>} */
-const phoneCodes = new Map();
+const { sendPhoneOtp, verifyPhoneOtp } = require("../lib/phoneOtp");
 
 // ─── JWT 简易实现（无需额外依赖）────────────────────────────
 const JWT_SECRET = process.env.CREATOR_JWT_SECRET || "aike-creator-secret-2026";
@@ -46,39 +45,49 @@ function requireCreator(req, res, next) {
 }
 
 // ─── 发送验证码 ──────────────────────────────────────────────
-router.post("/send-code", (req, res) => {
-  const { phone } = req.body;
-  if (!phone || !/^1\d{10}$/.test(phone)) {
-    return res.status(400).json({ success: false, message: "手机号格式错误" });
+router.post("/send-code", async (req, res) => {
+  try {
+    const raw = req.body != null ? req.body.phone : null;
+    const phone = String(raw != null ? raw : "")
+      .trim()
+      .replace(/\s+/g, "");
+    if (!phone || !/^1\d{10}$/.test(phone)) {
+      console.error(
+        `[creator/send-code] 手机号格式错误 raw=${JSON.stringify(raw)} normalized=${JSON.stringify(phone)}`,
+      );
+      return res.status(400).json({
+        success: false,
+        data: null,
+        message: "手机号格式错误（需 11 位且以 1 开头）",
+      });
+    }
+    const result = await sendPhoneOtp(phone);
+    return res.status(result.status).json({
+      success: result.ok,
+      data: null,
+      message: result.message || (result.ok ? "ok" : "发送失败"),
+    });
+  } catch (err) {
+    console.error("[creator/send-code] 未捕获异常", err);
+    return res.status(500).json({
+      success: false,
+      data: null,
+      message: err instanceof Error ? err.message : "服务器内部错误",
+    });
   }
-
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  phoneCodes.set(phone, { code, exp: Date.now() + 60_000 });
-
-  if (process.env.NODE_ENV !== "production") {
-    console.log(`[创作者验证码] ${phone}: ${code}`);
-  }
-
-  res.json({ success: true, message: "验证码已发送" });
 });
 
 // ─── 登录 / 注册 ─────────────────────────────────────────────
 router.post("/login", (req, res) => {
-  const { phone, code } = req.body;
+  const phone = String(req.body && req.body.phone != null ? req.body.phone : "").trim();
+  const code = String(req.body && req.body.code != null ? req.body.code : "").trim();
   if (!phone || !code) {
-    return res.status(400).json({ success: false, message: "参数不完整" });
+    return res.status(400).json({ success: false, data: null, message: "参数不完整" });
   }
 
-  const record = phoneCodes.get(phone);
-  const isDevMaster = process.env.NODE_ENV !== "production" && code === "888888";
-  if (!isDevMaster) {
-    if (!record) return res.status(400).json({ success: false, message: "验证码未发送或已过期" });
-    if (Date.now() > record.exp) {
-      phoneCodes.delete(phone);
-      return res.status(400).json({ success: false, message: "验证码已过期" });
-    }
-    if (record.code !== code) return res.status(400).json({ success: false, message: "验证码错误" });
-    phoneCodes.delete(phone);
+  const v = verifyPhoneOtp(phone, code);
+  if (!v.ok) {
+    return res.status(400).json({ success: false, data: null, message: v.message });
   }
 
   let creator = db.prepare("SELECT * FROM creators WHERE phone = ?").get(phone);
@@ -91,9 +100,45 @@ router.post("/login", (req, res) => {
 
   const token = signToken({ id: creator.id, phone: creator.phone });
 
+  let siteUser = db.prepare("SELECT id, phone FROM site_users WHERE phone = ?").get(phone);
+  if (!siteUser) {
+    try {
+      const ins = db
+        .prepare(
+          `INSERT INTO site_users (phone, email_verified, updated_at) VALUES (?, 0, datetime('now','localtime'))`,
+        )
+        .run(phone);
+      siteUser = { id: Number(ins.lastInsertRowid), phone };
+    } catch {
+      siteUser = db.prepare("SELECT id, phone FROM site_users WHERE phone = ?").get(phone);
+    }
+  }
+  const siteToken =
+    siteUser && siteUser.phone
+      ? signSitePayload({
+          typ: "site",
+          sub: "phone",
+          phone: siteUser.phone,
+          exp: Date.now() + 30 * 24 * 60 * 60 * 1000,
+        })
+      : null;
+
   res.json({
     success: true,
+    data: {
+      token,
+      siteToken,
+      creator: {
+        id: creator.id,
+        phone: creator.phone,
+        displayName: creator.display_name,
+        status: creator.status,
+        joinedAt: creator.created_at,
+      },
+    },
+    message: "ok",
     token,
+    siteToken,
     creator: {
       id: creator.id,
       phone: creator.phone,
@@ -225,6 +270,9 @@ router.get("/courses", requireCreator, (req, res) => {
       students: c.students,
       earnings: c.earnings,
       coverUrl: c.cover_url,
+      description: c.description ?? "",
+      videoUrl: c.video_url ?? "",
+      tags: c.tags ?? "",
       createdAt: c.created_at.slice(0, 10),
     })),
   });
@@ -232,19 +280,29 @@ router.get("/courses", requireCreator, (req, res) => {
 
 // ─── 新建课程 ────────────────────────────────────────────────
 router.post("/courses", requireCreator, (req, res) => {
-  const { title, price, description, videoUrl } = req.body;
+  const { title, price, description, videoUrl, tags } = req.body;
   if (!title || price == null) {
     return res.status(400).json({ success: false, message: "课程名称和价格必填" });
   }
 
+  const tagsStr =
+    typeof tags === "string" ? tags.trim().slice(0, 2000) : tags != null ? String(tags) : "";
+
   const result = db
     .prepare(
       `
-    INSERT INTO courses (creator_id, title, price_yuan, description, video_url, status)
-    VALUES (?, ?, ?, ?, ?, 'draft')
+    INSERT INTO courses (creator_id, title, price_yuan, description, video_url, tags, status)
+    VALUES (?, ?, ?, ?, ?, ?, 'draft')
   `,
     )
-    .run(req.creator.id, title.trim(), parseFloat(price) || 0, description || "", videoUrl || "");
+    .run(
+      req.creator.id,
+      title.trim(),
+      parseFloat(price) || 0,
+      description || "",
+      videoUrl || "",
+      tagsStr,
+    );
 
   res.json({ success: true, id: String(result.lastInsertRowid) });
 });
@@ -256,10 +314,16 @@ router.put("/courses/:id", requireCreator, (req, res) => {
     .get(req.params.id, req.creator.id);
   if (!course) return res.status(404).json({ success: false, message: "课程不存在" });
 
-  const { title, price, description, videoUrl } = req.body;
+  const { title, price, description, videoUrl, tags } = req.body;
+  const tagsNext =
+    typeof tags === "string"
+      ? tags.trim().slice(0, 2000)
+      : tags === undefined
+        ? (course.tags ?? "")
+        : String(tags);
   db.prepare(
     `
-    UPDATE courses SET title=?, price_yuan=?, description=?, video_url=?,
+    UPDATE courses SET title=?, price_yuan=?, description=?, video_url=?, tags=?,
     updated_at=datetime('now','localtime') WHERE id=?
   `,
   ).run(
@@ -267,6 +331,7 @@ router.put("/courses/:id", requireCreator, (req, res) => {
     price != null ? parseFloat(price) : course.price_yuan,
     description ?? course.description,
     videoUrl ?? course.video_url,
+    tagsNext,
     course.id,
   );
 

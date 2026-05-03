@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Briefcase, Radar } from "lucide-react";
+import { ArrowRight, Briefcase, Radar, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { ShareModal, buildAbsoluteShareUrl } from "@/components/ShareModal";
 import { useCoursesCatalog } from "@/contexts/CoursesCatalogContext";
 import { CourseCard } from "@/components/CourseCard";
 import type { CourseCategory } from "@/data/courses";
@@ -57,6 +58,14 @@ export function HomePage() {
   }, []);
 
   const courseCount = courses.length;
+
+  const [crmShareOpen, setCrmShareOpen] = React.useState(false);
+  const [crmShareUrl, setCrmShareUrl] = React.useState("");
+  React.useEffect(() => {
+    if (crmShareOpen) {
+      setCrmShareUrl(buildAbsoluteShareUrl("/services/saas-crm"));
+    }
+  }, [crmShareOpen]);
 
   const hotCourses = React.useMemo(() => {
     const hot = courses.filter((c) => c.isHot);
@@ -309,16 +318,50 @@ export function HomePage() {
                     <p className="text-sm text-amber-200/80">
                       已有企业客户通过我们的服务上线产品
                     </p>
-                    <div className="mt-4">
-                      <a href="https://crm.syzs.top" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3 rounded-xl border border-amber-400/20 bg-amber-500/[0.08] px-4 py-3 transition-colors hover:border-amber-400/40 hover:bg-amber-500/15 no-underline">
-                        <img src="/crm-logo.png" alt="中数云AI助贷CRM" className="h-10 w-10 shrink-0 rounded-lg object-contain bg-white p-0.5" />
+                    <div className="mt-4 flex flex-wrap items-stretch gap-2">
+                      <Link
+                        to="/services/saas-crm"
+                        className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-amber-400/20 bg-amber-500/[0.08] px-4 py-3 text-left no-underline transition-colors hover:border-amber-400/40 hover:bg-amber-500/15"
+                      >
+                        <img
+                          src="/crm-logo.png"
+                          alt="中数云AI助贷CRM"
+                          className="h-10 w-10 shrink-0 rounded-lg bg-white object-contain p-0.5"
+                        />
                         <div className="min-w-0 flex-1">
-                          <p className="flex items-center gap-1.5 text-sm font-semibold text-amber-100">中数云 AI 助贷 CRM<span className="ml-1.5 inline-flex items-center rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-medium text-emerald-300">已上线</span></p>
-                          <p className="mt-0.5 text-xs text-amber-200/70">贷款中介全流程管理 · 智能决策看板 · AI 客服</p>
+                          <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-amber-100">
+                            中数云 AI 助贷 CRM
+                            <span className="inline-flex items-center rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-medium text-emerald-300">
+                              已上线
+                            </span>
+                          </p>
+                          <p className="mt-0.5 text-xs text-amber-200/70">
+                            贷款中介全流程管理 · 智能决策看板 · 旗舰案例页
+                          </p>
                         </div>
                         <ArrowRight className="h-4 w-4 shrink-0 text-amber-300/60 transition group-hover:translate-x-0.5 group-hover:text-amber-300" />
-                      </a>
+                      </Link>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        title="分享案例介绍页"
+                        className="h-auto min-h-[3.25rem] w-11 shrink-0 border-amber-400/35 bg-amber-500/5 text-amber-100 hover:bg-amber-500/15 hover:text-amber-50"
+                        onClick={() => setCrmShareOpen(true)}
+                      >
+                        <Share2 className="h-4 w-4" aria-hidden />
+                      </Button>
                     </div>
+                    <p className="mt-2 text-xs text-amber-200/65">
+                      <a
+                        href="https://crm.syzs.top"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-amber-200 underline-offset-2 hover:text-amber-50 hover:underline"
+                      >
+                        打开在线演示（外链）→
+                      </a>
+                    </p>
                   </div>
                 </div>
               </div>
@@ -346,6 +389,13 @@ export function HomePage() {
           </CardContent>
         </Card>
       </section>
+
+      <ShareModal
+        open={crmShareOpen}
+        onOpenChange={setCrmShareOpen}
+        title="中数云AI助贷CRM"
+        url={crmShareUrl}
+      />
     </main>
   );
 }

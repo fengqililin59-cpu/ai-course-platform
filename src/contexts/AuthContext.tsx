@@ -1,5 +1,7 @@
 import * as React from "react";
 import { LoginModal } from "@/components/LoginModal";
+import { fetchSiteIdentityFromToken } from "@/lib/siteAuthApi";
+import { clearSiteUserToken, getSiteUserToken } from "@/lib/siteUserAuth";
 
 export type MembershipTier = "none" | "month" | "year" | "lifetime";
 
@@ -9,6 +11,8 @@ type AuthContextValue = {
   loginOpen: boolean;
   setLoginOpen: (open: boolean) => void;
   login: (phone: string) => void;
+  /** 根据本地 site_token 重新拉取并更新当前登录展示信息 */
+  refreshSiteUser: () => Promise<void>;
   logout: () => void;
 };
 
@@ -19,6 +23,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [membership, setMembership] = React.useState<MembershipTier>("none");
   const [loginOpen, setLoginOpen] = React.useState(false);
 
+  const refreshSiteUser = React.useCallback(async () => {
+    const tok = getSiteUserToken();
+    if (!tok) return;
+    try {
+      const id = await fetchSiteIdentityFromToken(tok);
+      if (id) setPhone(id);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  React.useEffect(() => {
+    void refreshSiteUser();
+  }, [refreshSiteUser]);
+
   const login = React.useCallback((nextPhone: string) => {
     setPhone(nextPhone.trim());
   }, []);
@@ -26,6 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = React.useCallback(() => {
     setPhone(null);
     setMembership("none");
+    clearSiteUserToken();
   }, []);
 
   const value = React.useMemo(
@@ -35,9 +55,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loginOpen,
       setLoginOpen,
       login,
+      refreshSiteUser,
       logout,
     }),
-    [phone, membership, loginOpen, login, logout],
+    [phone, membership, loginOpen, login, refreshSiteUser, logout],
   );
 
   return (
@@ -47,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         open={loginOpen}
         onOpenChange={setLoginOpen}
         onLoginSuccess={login}
+        onSessionEstablished={refreshSiteUser}
       />
     </AuthContext.Provider>
   );

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Check, Phone, Send, Sparkles } from "lucide-react";
+import { Check, Phone, Send, Share2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,12 +13,60 @@ import {
 import { useToast } from "@/contexts/ToastContext";
 import { SUCCESS_CASES } from "@/data/successCases";
 import { cn } from "@/lib/utils";
+import { ShareModal, buildAbsoluteShareUrl } from "@/components/ShareModal";
 
 const NEED_TYPE_OPTIONS = [
   { value: "网站", label: "网站" },
   { value: "小程序", label: "小程序" },
   { value: "AI系统", label: "AI系统" },
+  { value: "AI视觉", label: "AI视觉内容" },
 ] as const;
+
+/** 与 `/services/:serviceId` 详情数据 `src/data/services.ts` 对应 */
+type ServiceOverviewCard = {
+  serviceId: string;
+  title: string;
+  icon: string;
+  type: string;
+  desc: string;
+  detailHref?: string;
+  showShare?: boolean;
+};
+
+const SERVICE_OVERVIEW_CARDS: ServiceOverviewCard[] = [
+  {
+    serviceId: "svc-web-brand",
+    title: "企业官网与品牌落地页",
+    icon: "🌐",
+    type: "Web",
+    desc: "响应式站点、SEO 基础配置与内容区块搭建。",
+  },
+  {
+    serviceId: "svc-mini-mvp",
+    title: "小程序 MVP 上线",
+    icon: "📱",
+    type: "Mini Program",
+    desc: "核心流程跑通，便于验证需求与收款路径。",
+  },
+  {
+    serviceId: "svc-biz-plan",
+    detailHref: "/services/saas-system",
+    title: "商业方案与自动化工作流",
+    icon: "⚙️",
+    type: "Workflow",
+    desc: "方案文档 + 可复用提示词与工作流节点。",
+    showShare: true,
+  },
+  {
+    serviceId: "ai-vision",
+    detailHref: "/services/ai-vision",
+    title: "AI视觉内容创作",
+    icon: "🎨",
+    type: "AI Media",
+    desc: "AI 图片生成、视频剪辑与特效、批量制作营销素材，支持风格定制与商品展示短视频。",
+    showShare: true,
+  },
+];
 
 const BUDGET_OPTIONS = [
   { value: "1000-3000", label: "1000-3000" },
@@ -113,6 +161,9 @@ export function ServicesListPage() {
   const [reqType, setReqType] = React.useState<string>(NEED_TYPE_OPTIONS[0].value);
   const [reqBudget, setReqBudget] = React.useState<string>(BUDGET_OPTIONS[0].value);
   const [reqDesc, setReqDesc] = React.useState("");
+  const [shareOpen, setShareOpen] = React.useState(false);
+  const [shareTitle, setShareTitle] = React.useState("");
+  const [shareUrl, setShareUrl] = React.useState("");
 
   const formFieldClass =
     "flex min-h-10 w-full rounded-lg border border-border/80 bg-background/80 px-3.5 py-2.5 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/70 focus-visible:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20";
@@ -190,8 +241,80 @@ export function ServicesListPage() {
       </section>
 
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+        {/* 服务类目卡片 */}
+        <section aria-labelledby="service-cards-heading" className="scroll-mt-24">
+          <div className="text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              Services
+            </p>
+            <h2
+              id="service-cards-heading"
+              className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl"
+            >
+              定制交付范围
+            </h2>
+            <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
+              选择方向了解详情，或在页面底部直接填写需求获取报价
+            </p>
+          </div>
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {SERVICE_OVERVIEW_CARDS.map((card) => (
+              <Card
+                key={card.serviceId}
+                className="flex h-full flex-col border-border/70 bg-card/90 shadow-md transition-shadow hover:shadow-lg"
+              >
+                <CardHeader className="pb-2 pt-6">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-3xl" aria-hidden>
+                      {card.icon}
+                    </span>
+                    <Badge variant="secondary" className="shrink-0 font-normal">
+                      {card.type}
+                    </Badge>
+                  </div>
+                  <CardTitle className="mt-3 text-lg font-semibold leading-snug">
+                    {card.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-1 flex-col gap-4 pb-6 pt-0">
+                  <CardDescription className="text-sm leading-relaxed">
+                    {card.desc}
+                  </CardDescription>
+                  <div className="mt-auto flex flex-col gap-2 sm:flex-row">
+                    <Button className="w-full" variant="default" size="sm" asChild>
+                      <Link to={card.detailHref ?? `/services/${card.serviceId}`}>
+                        了解详情
+                      </Link>
+                    </Button>
+                    <Button className="w-full" variant="outline" size="sm" asChild>
+                      <a href="#request-form">填表咨询</a>
+                    </Button>
+                    {card.showShare ? (
+                      <Button
+                        type="button"
+                        className="w-full gap-2"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          const href = card.detailHref ?? `/services/${card.serviceId}`;
+                          setShareTitle(card.title);
+                          setShareUrl(buildAbsoluteShareUrl(href));
+                          setShareOpen(true);
+                        }}
+                      >
+                        <Share2 className="h-4 w-4 shrink-0" aria-hidden />
+                        分享
+                      </Button>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+
         {/* 标准套餐 */}
-        <section aria-labelledby="packages-heading" className="scroll-mt-24">
+        <section aria-labelledby="packages-heading" className="mt-20 scroll-mt-24">
           <div className="text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               Pricing
@@ -518,6 +641,8 @@ export function ServicesListPage() {
           </div>
         </section>
       </div>
+
+      <ShareModal open={shareOpen} onOpenChange={setShareOpen} title={shareTitle} url={shareUrl} />
     </main>
   );
 }

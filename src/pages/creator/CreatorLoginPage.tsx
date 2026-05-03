@@ -130,8 +130,14 @@ export function CreatorLoginPage() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                开发环境可查看服务端控制台验证码，或直接使用{" "}
-                <span className="font-mono text-foreground">888888</span> 登录。
+                {import.meta.env.DEV ? (
+                  <>
+                    本地开发：服务端控制台会打印验证码；也可使用{" "}
+                    <span className="font-mono text-foreground">888888</span> 登录。
+                  </>
+                ) : (
+                  <>验证码 5 分钟内有效；未收到请检查号码或稍后再试。</>
+                )}
               </p>
             </div>
             {error ? (

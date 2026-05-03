@@ -6,16 +6,29 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "node --watch index.js"
+    "dev": "node --watch index.js",
+    "withdraw:list": "node scripts/withdraw-cli.js list",
+    "withdraw:list-all": "node scripts/withdraw-cli.js list-all",
+    "withdraw:approve": "node scripts/withdraw-cli.js approve",
+    "withdraw:reject": "node scripts/withdraw-cli.js reject",
+    "withdraw:paid": "node scripts/withdraw-cli.js paid",
+    "withdraw:audit": "node scripts/withdraw-cli.js audit",
+    "jobs:refresh-hot-skills": "node scripts/refresh-hot-skills.js"
   },
   "engines": {
     "node": ">=18.20.0"
   },
   "dependencies": {
+    "@alicloud/dysmsapi20170525": "^4.5.1",
     "alipay-sdk": "^4.14.0",
+    "axios": "^1.16.0",
     "better-sqlite3": "^11.8.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.21.0"
+    "express": "^4.21.0",
+    "express-rate-limit": "^7.5.1",
+    "ioredis": "^5.10.1",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^6.9.16"
   }
 }

@@ -1,13 +1,16 @@
 import * as React from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Check,
   ChevronLeft,
   Copy,
   Heart,
+  Megaphone,
+  MessageSquare,
   Play,
   ShoppingCart,
   Star,
+  ThumbsUp,
   User,
 } from "lucide-react";
 import {
@@ -22,6 +25,21 @@ import {
   readCourseProgress,
   writeCourseProgress,
 } from "@/lib/courseProgress";
+import { resolveApiUrl } from "@/lib/apiBase";
+import {
+  claimCoupon,
+  fetchCouponPreview,
+  fetchCouponsAvailable,
+  type CouponPreview,
+  type CouponTemplate,
+} from "@/lib/couponApi";
+import { fetchSeckillByCourse, purchaseSeckill, type SeckillActivity } from "@/lib/seckillApi";
+import { getSiteUserToken } from "@/lib/siteUserAuth";
+import {
+  fetchUserCourseProgress,
+  postLearningSession,
+  postUserCourseProgress,
+} from "@/lib/userProgressApi";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCourseUser } from "@/contexts/CourseUserContext";
 import { useToast } from "@/contexts/ToastContext";
@@ -43,6 +61,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { createDistributionLink } from "@/lib/distributionApi";
+import {
+  consumePendingDistributionRefForCourse,
+  getDistributionRefForCourse,
+  saveDistributionRefForCourse,
+  setPendingDistributionRef,
+} from "@/lib/distributionRefStorage";
+import { RatingStars } from "@/components/RatingStars";
+import {
+  fetchCourseReviews,
+  fetchReviewCheck,
+  markHelpful,
+  submitReview,
+  type CourseReview,
+} from "@/lib/courseReviewApi";
+import { Textarea } from "@/components/ui/textarea";
 
 function chapterTypeLabel(type: string) {
   const map: Record<string, string> = {
@@ -82,6 +116,12 @@ function randomCountdownSeconds20to24h() {
   return low + Math.floor(Math.random() * (high - low + 1));
 }
 
+function describeCouponRule(c: { type: string; value: number; condition_amount: number }): string {
+  const cond = c.condition_amount > 0 ? `满¥${c.condition_amount}可用` : "无门槛";
+  if (String(c.type).toLowerCase() === "percent") return `${c.value}% 折扣（${cond}）`;
+  return `减 ¥${c.value}（${cond}）`;
+}
+
 function customServicePitch(category: CourseCategory): string {
   if (category === "money") {
     return "正在学变现与获客？我们可帮你把副业网站、落地页直接做出来，承接咨询与收款。";
@@ -102,6 +142,12 @@ function starBarPercents(rating: number): [number, number, number, number, numbe
   if (rating >= 4.7) return [64, 23, 9, 2, 2];
   if (rating >= 4.65) return [61, 24, 10, 3, 2];
   return [58, 26, 11, 3, 2];
+}
+
+function formatReviewDate(iso: string) {
+  const d = new Date(iso.includes("T") ? iso : iso.replace(" ", "T"));
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("zh-CN", { dateStyle: "short", timeStyle: "short" });
 }
 
 function StarRatingRow({
@@ -134,10 +180,13 @@ function StarRatingRow({
 
 export function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { getCourseById } = useCoursesCatalog();
   const { phone, setLoginOpen } = useAuth();
   const { showToast } = useToast();
   const { isPurchased, isFavorite, toggleFavorite } = useCourseUser();
+  const purchasedForBanner = Boolean(courseId && isPurchased(courseId));
   const [copyLabel, setCopyLabel] = React.useState<"idle" | "copied" | "error">(
     "idle",
   );
@@ -150,19 +199,112 @@ export function CourseDetailPage() {
     "chapters" | "content" | "reviews"
   >("chapters");
   const [paySubmitting, setPaySubmitting] = React.useState(false);
+  const [promoteDialogOpen, setPromoteDialogOpen] = React.useState(false);
+  const [promoteUrl, setPromoteUrl] = React.useState("");
+  const [promoteLoading, setPromoteLoading] = React.useState(false);
+  const [seckillAct, setSeckillAct] = React.useState<SeckillActivity | null>(null);
+  const [checkoutPreview, setCheckoutPreview] = React.useState<CouponPreview | null>(null);
+  const [availableCoupons, setAvailableCoupons] = React.useState<CouponTemplate[]>([]);
+  const [seckillSecondsLeft, setSeckillSecondsLeft] = React.useState(0);
+  const [claimingCouponId, setClaimingCouponId] = React.useState<number | null>(null);
+  const [apiReviews, setApiReviews] = React.useState<CourseReview[]>([]);
+  const [avgRating, setAvgRating] = React.useState(0);
+  const [totalReviews, setTotalReviews] = React.useState(0);
+  const [reviewPage, setReviewPage] = React.useState(1);
+  const [reviewLoading, setReviewLoading] = React.useState(false);
+  const [hasMoreReviews, setHasMoreReviews] = React.useState(false);
+  const [showReviewModal, setShowReviewModal] = React.useState(false);
+  const [newRating, setNewRating] = React.useState(5);
+  const [newContent, setNewContent] = React.useState("");
+  const [submittingReview, setSubmittingReview] = React.useState(false);
+  const [reviewCheck, setReviewCheck] = React.useState<{
+    canSubmit: boolean;
+    hasReviewed: boolean;
+    purchased: boolean;
+  } | null>(null);
+  const [reviewCheckLoading, setReviewCheckLoading] = React.useState(false);
   const progressSaveToastDebounceRef = React.useRef<number>(0);
+  const progressPostDebounceRef = React.useRef<number>(0);
+  const progressServerSentRef = React.useRef<number | null>(null);
 
   const course = courseId ? getCourseById(courseId) : undefined;
   const purchasedEarly = Boolean(course && isPurchased(course.id));
 
+  const queueProgressPost = React.useCallback(
+    (pct: number) => {
+      if (!getSiteUserToken() || !course?.id) return;
+      window.clearTimeout(progressPostDebounceRef.current);
+      const prev = progressServerSentRef.current;
+      const bigJump = prev == null || Math.abs(pct - prev) >= 5;
+      const run = () => {
+        void postUserCourseProgress(course.id, pct)
+          .then(() => {
+            progressServerSentRef.current = pct;
+          })
+          .catch(() => {});
+      };
+      if (bigJump) run();
+      else progressPostDebounceRef.current = window.setTimeout(run, 10_000);
+    },
+    [course?.id],
+  );
+
+  React.useEffect(() => {
+    progressServerSentRef.current = null;
+    window.clearTimeout(progressPostDebounceRef.current);
+  }, [course?.id]);
+
   React.useEffect(() => {
     if (!course || !purchasedEarly) return;
-    setStudyPct(readCourseProgress(course.id));
+    const local = readCourseProgress(course.id);
+    setStudyPct(local);
+    let cancelled = false;
+    void fetchUserCourseProgress(course.id).then((srv) => {
+      if (cancelled) return;
+      const merged = srv != null ? Math.max(local, srv) : local;
+      setStudyPct(merged);
+      progressServerSentRef.current = merged;
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [course, purchasedEarly]);
+
+  const learningSessionStartRef = React.useRef<number>(Date.now());
+
+  React.useEffect(() => {
+    if (!course || !purchasedEarly || !getSiteUserToken()) return;
+    const cid = course.id;
+    learningSessionStartRef.current = Date.now();
+    const flushSession = () => {
+      if (!getSiteUserToken()) return;
+      const end = Date.now();
+      const sec = Math.floor((end - learningSessionStartRef.current) / 1000);
+      if (sec < 5) return;
+      learningSessionStartRef.current = end;
+      void postLearningSession(cid, sec).catch(() => {});
+    };
+    const onVisibility = () => {
+      if (document.hidden) {
+        flushSession();
+      } else {
+        learningSessionStartRef.current = Date.now();
+      }
+    };
+    const onPageHide = () => flushSession();
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", onPageHide);
+      flushSession();
+    };
+  }, [course?.id, purchasedEarly]);
 
   React.useEffect(() => {
     return () => {
       window.clearTimeout(progressSaveToastDebounceRef.current);
+      window.clearTimeout(progressPostDebounceRef.current);
     };
   }, []);
 
@@ -172,6 +314,65 @@ export function CourseDetailPage() {
       setDetailTab("chapters");
     }
   }, [courseId]);
+
+  React.useEffect(() => {
+    if (!courseId) return;
+    const ref = searchParams.get("ref")?.trim();
+    if (ref) {
+      if (phone) {
+        saveDistributionRefForCourse(courseId, ref);
+      } else {
+        setPendingDistributionRef(ref, courseId);
+      }
+    } else if (phone) {
+      consumePendingDistributionRefForCourse(courseId);
+    }
+  }, [searchParams, courseId, phone]);
+
+  React.useEffect(() => {
+    if (!courseId) return;
+    let cancelled = false;
+    void fetchSeckillByCourse(courseId).then((r) => {
+      if (!cancelled) setSeckillAct(r);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId]);
+
+  React.useEffect(() => {
+    if (!courseId || !phone || !getSiteUserToken()) {
+      setCheckoutPreview(null);
+      setAvailableCoupons([]);
+      return;
+    }
+    let cancelled = false;
+    void Promise.all([fetchCouponPreview(courseId), fetchCouponsAvailable()]).then(([p, av]) => {
+      if (!cancelled) {
+        setCheckoutPreview(p);
+        setAvailableCoupons(av);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId, phone]);
+
+  const seckillBanner = checkoutPreview?.seckill ?? seckillAct;
+
+  React.useEffect(() => {
+    if (!seckillBanner || purchasedForBanner) {
+      setSeckillSecondsLeft(0);
+      return;
+    }
+    const tick = () => {
+      const e = new Date(String(seckillBanner.end_time).replace(" ", "T")).getTime();
+      setSeckillSecondsLeft(Math.max(0, Math.floor((e - Date.now()) / 1000)));
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [seckillBanner, purchasedForBanner]);
 
   React.useEffect(() => {
     const id = window.setInterval(() => {
@@ -187,6 +388,80 @@ export function CourseDetailPage() {
       document.title = "课程不存在 - AIlearn Pro";
     }
   }, [course, courseId]);
+
+  const loadReviews = React.useCallback(
+    async (page: number, append: boolean) => {
+      if (!courseId) return;
+      setReviewLoading(true);
+      try {
+        const res = await fetchCourseReviews(courseId, page, 5);
+        if (res.success && res.data) {
+          const { reviews: newReviews, total, avgRating: ag, totalReviews: tr } = res.data;
+          setAvgRating(ag);
+          setTotalReviews(tr);
+          setApiReviews((prev) => {
+            const next = append ? [...prev, ...newReviews] : newReviews;
+            setHasMoreReviews(total > next.length);
+            return next;
+          });
+          setReviewPage(page);
+        }
+      } catch (e) {
+        showToast(e instanceof Error ? e.message : "加载评价失败", "error");
+      } finally {
+        setReviewLoading(false);
+      }
+    },
+    [courseId, showToast],
+  );
+
+  React.useEffect(() => {
+    if (!courseId) {
+      setApiReviews([]);
+      setTotalReviews(0);
+      setAvgRating(0);
+      setHasMoreReviews(false);
+      return;
+    }
+    void loadReviews(1, false);
+  }, [courseId, loadReviews]);
+
+  React.useEffect(() => {
+    if (!courseId || !phone || !getSiteUserToken()) {
+      setReviewCheck(null);
+      setReviewCheckLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setReviewCheckLoading(true);
+    void fetchReviewCheck(courseId)
+      .then((d) => {
+        if (!cancelled) setReviewCheck(d);
+      })
+      .catch(() => {
+        if (!cancelled) setReviewCheck(null);
+      })
+      .finally(() => {
+        if (!cancelled) setReviewCheckLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId, phone]);
+
+  const payPriceNum = React.useMemo(() => {
+    if (!course) return 0;
+    if (checkoutPreview) return Number(checkoutPreview.best.finalPrice) || course.price;
+    if (seckillAct && seckillAct.stock > 0) {
+      const now = Date.now();
+      const s = new Date(String(seckillAct.start_time).replace(" ", "T")).getTime();
+      const e = new Date(String(seckillAct.end_time).replace(" ", "T")).getTime();
+      if (Number.isFinite(s) && Number.isFinite(e) && now >= s && now <= e) {
+        return Number(seckillAct.seckill_price) || course.price;
+      }
+    }
+    return course.price;
+  }, [course, checkoutPreview, seckillAct]);
 
   if (!course) {
     return (
@@ -212,6 +487,50 @@ export function CourseDetailPage() {
   const purchased = isPurchased(activeCourse.id);
   const favorited = isFavorite(activeCourse.id);
   const firstLessonCaption = "第1课：课程介绍（免费试看）";
+  const applicableList = checkoutPreview?.applicableUserCoupons ?? [];
+  const claimableHere = React.useMemo(() => {
+    const cid = String(activeCourse.id);
+    return availableCoupons.filter(
+      (c) => c.applicable_courses.length === 0 || c.applicable_courses.includes(cid),
+    );
+  }, [availableCoupons, activeCourse.id]);
+
+  async function handleSubmitReview() {
+    if (!newContent.trim()) {
+      showToast("请填写评价内容", "error");
+      return;
+    }
+    setSubmittingReview(true);
+    try {
+      await submitReview(activeCourse.id, newRating, newContent.trim());
+      setShowReviewModal(false);
+      setNewContent("");
+      setNewRating(5);
+      setReviewCheck((c) => (c ? { ...c, hasReviewed: true, canSubmit: false } : c));
+      await loadReviews(1, false);
+      showToast("提交成功，审核通过后将公开展示", "success");
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "提交失败", "error");
+    } finally {
+      setSubmittingReview(false);
+    }
+  }
+
+  async function handleReviewHelpful(reviewId: number) {
+    if (!getSiteUserToken()) {
+      setLoginOpen(true);
+      return;
+    }
+    try {
+      const { helpful_count: hc, alreadyMarked } = await markHelpful(reviewId);
+      setApiReviews((prev) => prev.map((r) => (r.id === reviewId ? { ...r, helpful_count: hc } : r)));
+      if (alreadyMarked) {
+        showToast("您已标记过有用", "info");
+      }
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "操作失败", "error");
+    }
+  }
 
   async function handleCopyPrompt() {
     const ok = await copyToClipboard(activeCourse.samplePrompt);
@@ -237,36 +556,98 @@ export function CourseDetailPage() {
     setPayDialogOpen(true);
   }
 
+  async function handleClaimCoupon(tplId: number) {
+    if (!phone) {
+      setLoginOpen(true);
+      return;
+    }
+    if (!courseId || !getSiteUserToken()) return;
+    setClaimingCouponId(tplId);
+    try {
+      await claimCoupon(tplId);
+      showToast("领取成功", "success");
+      const [p, av] = await Promise.all([
+        fetchCouponPreview(courseId),
+        fetchCouponsAvailable(),
+      ]);
+      setCheckoutPreview(p);
+      setAvailableCoupons(av);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "领取失败", "error");
+    } finally {
+      setClaimingCouponId(null);
+    }
+  }
+
   async function handleConfirmPay() {
     if (!phone) {
       setLoginOpen(true);
       return;
     }
-    const rawBase = String(import.meta.env.VITE_PAY_API_BASE ?? "").trim();
-    const apiBase = rawBase.replace(/\/$/, "");
-    const createOrderUrl = apiBase
-      ? `${apiBase}/api/pay/create-order`
-      : "/api/pay/create-order";
     setPaySubmitting(true);
     try {
+      if (checkoutPreview?.best.mode === "seckill" && checkoutPreview.seckill) {
+        const data = await purchaseSeckill(checkoutPreview.seckill.id);
+        if (data.devSimulate && data.outTradeNo) {
+          setPayDialogOpen(false);
+          const q = new URLSearchParams({
+            outTradeNo: data.outTradeNo,
+            courseId: String(activeCourse.id),
+            amount: String(data.amount ?? payPriceNum),
+            courseName: activeCourse.title,
+          });
+          navigate(`/pay/dev-simulate?${q.toString()}`);
+          return;
+        }
+        if (data.payUrl) {
+          setPayDialogOpen(false);
+          window.location.href = data.payUrl;
+          return;
+        }
+        throw new Error("未返回支付链接");
+      }
+
+      const createOrderUrl = resolveApiUrl("/api/pay/create-order");
+      const distributorRef = getDistributionRefForCourse(activeCourse.id);
+      const payload: Record<string, unknown> = {
+        courseId: activeCourse.id,
+        userId: phone,
+        amount: payPriceNum,
+        courseName: activeCourse.title,
+      };
+      if (checkoutPreview?.best.mode === "coupon" && checkoutPreview.best.user_coupon_id) {
+        payload.userCouponId = checkoutPreview.best.user_coupon_id;
+      }
+      if (distributorRef) {
+        payload.distributorRef = distributorRef;
+      }
       const res = await fetch(createOrderUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          courseId: activeCourse.id,
-          userId: phone,
-          amount: activeCourse.price,
-          courseName: activeCourse.title,
-        }),
+        body: JSON.stringify(payload),
       });
-      const data: { payUrl?: string; message?: string } = await res
-        .json()
-        .catch(() => ({}));
+      const data: {
+        payUrl?: string | null;
+        message?: string;
+        devSimulate?: boolean;
+        outTradeNo?: string;
+      } = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(data.message || `下单失败（${res.status}）`);
       }
+      if (data.devSimulate && data.outTradeNo) {
+        setPayDialogOpen(false);
+        const q = new URLSearchParams({
+          outTradeNo: data.outTradeNo,
+          courseId: String(activeCourse.id),
+          amount: String(payPriceNum),
+          courseName: activeCourse.title,
+        });
+        navigate(`/pay/dev-simulate?${q.toString()}`);
+        return;
+      }
       if (!data.payUrl) {
-        throw new Error("未返回支付链接，请检查支付服务配置");
+        throw new Error("未返回支付链接，请检查支付服务配置或开启 PAY_DEV_SIMULATE=1 走模拟支付");
       }
       setPayDialogOpen(false);
       window.location.href = data.payUrl;
@@ -278,8 +659,144 @@ export function CourseDetailPage() {
     }
   }
 
+  async function handleOpenPromote() {
+    if (!phone) {
+      setLoginOpen(true);
+      return;
+    }
+    setPromoteDialogOpen(true);
+    setPromoteUrl("");
+    setPromoteLoading(true);
+    try {
+      const { shareUrl } = await createDistributionLink(activeCourse.id, phone);
+      setPromoteUrl(shareUrl);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "生成推广链接失败";
+      showToast(msg, "error");
+      setPromoteDialogOpen(false);
+    } finally {
+      setPromoteLoading(false);
+    }
+  }
+
+  async function handleCopyPromoteUrl() {
+    if (!promoteUrl) return;
+    const ok = await copyToClipboard(promoteUrl);
+    showToast(ok ? "链接已复制" : "复制失败，请手动选择", ok ? "success" : "error");
+  }
+
+  const promoteQrSrc = promoteUrl
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(promoteUrl)}`
+    : "";
+
   return (
     <main className="mx-auto min-w-0 max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+      <Dialog open={promoteDialogOpen} onOpenChange={setPromoteDialogOpen}>
+        <DialogContent className="w-[min(100vw-2rem,24rem)]">
+          <DialogHeader>
+            <DialogTitle>推广赚钱</DialogTitle>
+            <DialogDescription>
+              分享下方链接或海报二维码。佣金比例以创建链接时为准（默认由平台配置）；好友支付成功后佣金先进入「待结算」，期满自动转入可提现余额。未登录用户通过推广链接进入时，系统会在本机暂存推广参数，登录后再打开同一课程即可关联订单。
+            </DialogDescription>
+          </DialogHeader>
+          {promoteLoading ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              正在生成专属链接…
+            </p>
+          ) : promoteUrl ? (
+            <div className="space-y-4">
+              <div className="flex flex-col items-center gap-3 rounded-lg border border-border/60 bg-muted/25 p-4">
+                <img
+                  src={promoteQrSrc}
+                  width={200}
+                  height={200}
+                  alt="推广链接二维码"
+                  className="rounded-md bg-white p-2"
+                />
+                <p className="text-center text-xs text-muted-foreground">
+                  扫码打开购买页（含您的推广参数）
+                </p>
+              </div>
+              <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                <p className="text-xs font-medium text-muted-foreground">专属链接</p>
+                <p className="mt-1 break-all text-sm leading-snug text-foreground">
+                  {promoteUrl}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => void handleCopyPromoteUrl()}
+              >
+                <Copy className="h-4 w-4" />
+                复制链接
+              </Button>
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button type="button" variant="secondary" onClick={() => setPromoteDialogOpen(false)}>
+              关闭
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showReviewModal} onOpenChange={setShowReviewModal}>
+        <DialogContent className="w-[min(100vw-2rem,28rem)]">
+          <DialogHeader>
+            <DialogTitle>评价课程</DialogTitle>
+            <DialogDescription>提交后需管理员审核，通过后将展示在学员真实评价中。</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-1">
+            <div>
+              <p className="mb-2 text-sm font-medium text-foreground">评分</p>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    className="rounded p-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onClick={() => setNewRating(star)}
+                    aria-label={`${star} 星`}
+                  >
+                    <Star
+                      className={cn(
+                        "h-7 w-7",
+                        star <= newRating
+                          ? "fill-amber-400 text-amber-400"
+                          : "fill-transparent text-muted-foreground/35",
+                      )}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label htmlFor="review-content" className="mb-2 block text-sm font-medium text-foreground">
+                评价内容
+              </label>
+              <Textarea
+                id="review-content"
+                rows={4}
+                value={newContent}
+                onChange={(e) => setNewContent(e.target.value)}
+                placeholder="分享你的学习心得…"
+                maxLength={2000}
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={() => setShowReviewModal(false)}>
+              取消
+            </Button>
+            <Button type="button" disabled={submittingReview} onClick={() => void handleSubmitReview()}>
+              {submittingReview ? "提交中…" : "提交评价"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={payDialogOpen} onOpenChange={setPayDialogOpen}>
         <DialogContent className="w-[min(100vw-2rem,28rem)]">
           <DialogHeader>
@@ -298,8 +815,13 @@ export function CourseDetailPage() {
             <p>
               <span className="text-muted-foreground">应付金额</span>
               <span className="ml-2 text-lg font-bold text-foreground">
-                {formatCoursePrice(activeCourse.price)}
+                {formatCoursePrice(payPriceNum)}
               </span>
+              {payPriceNum < activeCourse.price ? (
+                <span className="ml-2 text-sm text-muted-foreground line-through">
+                  {formatCoursePrice(activeCourse.price)}
+                </span>
+              ) : null}
             </p>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
@@ -514,6 +1036,7 @@ export function CourseDetailPage() {
                     const v = Number(e.target.value);
                     setStudyPct(v);
                     writeCourseProgress(activeCourse.id, v);
+                    queueProgressPost(v);
                     window.clearTimeout(progressSaveToastDebounceRef.current);
                     progressSaveToastDebounceRef.current = window.setTimeout(
                       () => {
@@ -636,6 +1159,113 @@ export function CourseDetailPage() {
 
               {detailTab === "reviews" ? (
                 <div className="space-y-8 rounded-xl border border-border/80 bg-card p-6 shadow-sm">
+                  <div className="space-y-5 border-b border-border/80 pb-8">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold tracking-tight text-foreground">
+                          学员真实评价
+                        </h3>
+                        <div className="mt-2 flex flex-wrap items-center gap-3">
+                          <RatingStars rating={avgRating} size={20} />
+                          <span className="text-sm text-muted-foreground">
+                            {totalReviews > 0 ? (
+                              <>
+                                <span className="font-semibold tabular-nums text-foreground">
+                                  {avgRating.toFixed(1)}
+                                </span>
+                                {" · "}
+                                <span className="tabular-nums">{totalReviews}</span> 条已通过审核
+                              </>
+                            ) : (
+                              "暂无已通过审核的评价"
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 flex-wrap gap-2">
+                        {reviewCheckLoading ? (
+                          <span className="text-xs text-muted-foreground">资格校验中…</span>
+                        ) : reviewCheck?.canSubmit ? (
+                          <Button type="button" variant="outline" onClick={() => setShowReviewModal(true)}>
+                            写评价
+                          </Button>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    {reviewLoading && apiReviews.length === 0 ? (
+                      <p className="py-6 text-center text-sm text-muted-foreground">加载评价中…</p>
+                    ) : null}
+
+                    <ul className="space-y-5">
+                      {apiReviews.map((rev) => (
+                        <li
+                          key={rev.id}
+                          className="rounded-lg border border-border/70 bg-muted/20 p-4 sm:p-5"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-medium text-foreground">{rev.author_display}</span>
+                                <RatingStars rating={rev.rating} size={14} />
+                              </div>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {formatReviewDate(rev.created_at)}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="shrink-0 gap-1 text-muted-foreground hover:text-primary"
+                              onClick={() => void handleReviewHelpful(rev.id)}
+                            >
+                              <ThumbsUp className="h-3.5 w-3.5" aria-hidden />
+                              <span className="tabular-nums">{rev.helpful_count}</span>
+                            </Button>
+                          </div>
+                          <p className="mt-3 text-sm leading-relaxed text-foreground">{rev.content}</p>
+                          {rev.reply_content ? (
+                            <div className="mt-4 rounded-md border border-border/60 bg-background/80 p-3">
+                              <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                                <MessageSquare className="h-3.5 w-3.5" aria-hidden />
+                                管理员回复
+                              </div>
+                              <p className="mt-1.5 text-sm text-muted-foreground">{rev.reply_content}</p>
+                              {rev.reply_at ? (
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  {formatReviewDate(rev.reply_at)}
+                                </p>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+
+                    {hasMoreReviews ? (
+                      <div className="flex justify-center pt-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={reviewLoading}
+                          onClick={() => void loadReviews(reviewPage + 1, true)}
+                        >
+                          {reviewLoading ? "加载中…" : "加载更多"}
+                        </Button>
+                      </div>
+                    ) : null}
+
+                    {!reviewLoading && totalReviews === 0 ? (
+                      <p className="py-4 text-center text-sm text-muted-foreground">
+                        暂无评价，购买课程后可提交首条评价（需审核后展示）
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <p className="text-xs font-medium text-muted-foreground">以下为课程页展示用参考数据</p>
+
                   <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between lg:gap-12">
                     <div className="shrink-0">
                       <p className="text-5xl font-bold tabular-nums tracking-tight text-foreground">
@@ -749,8 +1379,13 @@ export function CourseDetailPage() {
                 <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 pt-2">
                   <div className="flex flex-wrap items-baseline gap-2">
                     <span className="text-3xl font-bold tracking-tight">
-                      {formatCoursePrice(activeCourse.price)}
+                      {formatCoursePrice(payPriceNum)}
                     </span>
+                    {activeCourse.price > payPriceNum + 1e-6 && (
+                      <span className="text-lg text-muted-foreground line-through">
+                        {formatCoursePrice(activeCourse.price)}
+                      </span>
+                    )}
                     {activeCourse.originalPrice > activeCourse.price && (
                       <>
                         <span className="text-lg text-muted-foreground line-through">
@@ -762,14 +1397,20 @@ export function CourseDetailPage() {
                       </>
                     )}
                   </div>
-                  {!purchased && (
+                  {!purchased && checkoutPreview?.best.mode === "seckill" && checkoutPreview.seckill ? (
+                    <p className="text-right text-sm font-medium leading-tight text-red-600 dark:text-red-400">
+                      秒杀进行中 · 剩余库存{" "}
+                      <span className="tabular-nums">{checkoutPreview.seckill.stock}</span> · 每人限
+                      {checkoutPreview.seckill.limit_per_user} 件
+                    </p>
+                  ) : !purchased ? (
                     <p className="text-right text-sm font-medium leading-tight text-orange-600 dark:text-orange-400">
                       限时优惠，剩余{" "}
                       <span className="tabular-nums text-red-600 dark:text-red-400">
                         {formatCountdownHms(promoSecondsLeft)}
                       </span>
                     </p>
-                  )}
+                  ) : null}
                 </div>
                 {activeCourse.isVipFree && (
                   <p className="text-xs text-primary">
@@ -778,8 +1419,80 @@ export function CourseDetailPage() {
                 )}
               </CardHeader>
               <CardContent className="space-y-3">
+                {!purchased && (seckillBanner || applicableList.length > 0 || claimableHere.length > 0) ? (
+                  <div className="space-y-3 rounded-lg border border-border/70 bg-muted/25 p-3 text-sm">
+                    {seckillBanner && seckillBanner.stock > 0 ? (
+                      <div className="rounded-md border border-red-200/80 bg-red-50/60 px-3 py-2 dark:border-red-900/50 dark:bg-red-950/40">
+                        <p className="font-semibold text-red-700 dark:text-red-300">限时秒杀</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          距结束{" "}
+                          <span className="font-mono tabular-nums text-foreground">
+                            {formatCountdownHms(seckillSecondsLeft)}
+                          </span>
+                          · 库存{" "}
+                          <span className="tabular-nums font-medium text-foreground">{seckillBanner.stock}</span>
+                          {checkoutPreview?.best.mode === "seckill" ? (
+                            <span className="text-red-600 dark:text-red-400"> · 本单已选秒杀价</span>
+                          ) : checkoutPreview?.best.mode === "coupon" ? (
+                            <span> · 本单优惠券更优，已自动选用券后价</span>
+                          ) : null}
+                        </p>
+                      </div>
+                    ) : null}
+                    {applicableList.length > 0 ? (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">可用优惠券</p>
+                        <ul className="mt-2 space-y-2">
+                          {applicableList.map((row) => (
+                            <li
+                              key={row.user_coupon_id}
+                              className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/60 bg-background/80 px-2 py-1.5"
+                            >
+                              <span className="font-medium text-foreground">{row.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                预估 ¥{Number(row.pay_price).toFixed(2)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                    {claimableHere.length > 0 ? (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">可领取</p>
+                        <ul className="mt-2 space-y-2">
+                          {claimableHere.map((tpl) => (
+                            <li
+                              key={tpl.id}
+                              className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed border-border/70 bg-background/60 px-2 py-1.5"
+                            >
+                              <div className="min-w-0">
+                                <p className="font-medium text-foreground">{tpl.name}</p>
+                                <p className="text-xs text-muted-foreground">{describeCouponRule(tpl)}</p>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                disabled={claimingCouponId === tpl.id}
+                                onClick={() => void handleClaimCoupon(tpl.id)}
+                              >
+                                {claimingCouponId === tpl.id ? "领取中…" : "领取"}
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
                 <Button
-                  className="w-full gap-2"
+                  className={cn(
+                    "w-full gap-2",
+                    !purchased &&
+                      checkoutPreview?.best.mode === "seckill" &&
+                      "bg-red-600 text-white hover:bg-red-600/90 dark:bg-red-600 dark:hover:bg-red-600/90",
+                  )}
                   size="lg"
                   type="button"
                   onClick={handlePrimaryPurchaseClick}
@@ -789,7 +1502,7 @@ export function CourseDetailPage() {
                   ) : (
                     <ShoppingCart className="h-4 w-4" />
                   )}
-                  {purchased ? "已购买，去学习" : "立即购买"}
+                  {purchased ? "已购买，去学习" : checkoutPreview?.best.mode === "seckill" ? "立即秒杀" : "立即购买"}
                 </Button>
                 <Button
                   type="button"
@@ -808,6 +1521,15 @@ export function CourseDetailPage() {
                     )}
                   />
                   {favorited ? "已收藏" : "加入收藏"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full gap-2 border-amber-500/40 text-amber-900 hover:bg-amber-500/10 dark:text-amber-100"
+                  onClick={() => void handleOpenPromote()}
+                >
+                  <Megaphone className="h-4 w-4" />
+                  推广赚钱
                 </Button>
                 <p className="text-center text-[11px] text-muted-foreground">
                   支持企业对公 · 可开发票

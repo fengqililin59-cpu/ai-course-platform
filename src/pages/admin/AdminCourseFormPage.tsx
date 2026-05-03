@@ -356,10 +356,15 @@ export function AdminCourseFormPage() {
                 <label className="text-sm font-medium">标签（逗号分隔）</label>
                 <input
                   className={fieldClass}
-                  placeholder="副业, SOP, 报价"
+                  placeholder="例如：ChatGPT, Python, 提示词"
                   value={tagsInput}
                   onChange={(e) => setTagsInput(e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  写入本页课程目录（localStorage）。数据库里的创作者课程请用创作者端或{" "}
+                  <code className="rounded bg-muted px-1">PUT /api/admin/courses/:id</code>{" "}
+                  更新 <code className="rounded bg-muted px-1">tags</code>，供就业雷达岗位推荐匹配。
+                </p>
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <label className="text-sm font-medium">学员数（编辑用）</label>

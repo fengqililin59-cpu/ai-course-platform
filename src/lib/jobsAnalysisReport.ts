@@ -1,5 +1,7 @@
 /** 与 server/routes/jobsAnalysis.js 中 buildUserMessage 字段一致，供前端展示与缓存 */
 
+import { resolveApiUrl } from "@/lib/apiBase";
+
 export type JobsQuizAnswers = {
   identity: string;
   goal: string;
@@ -109,8 +111,5 @@ export function buildFallbackReport(a: JobsQuizAnswers): string {
 }
 
 export function jobsAnalysisApiUrl(): string {
-  const rawBase = String(import.meta.env.VITE_PAY_API_BASE ?? "").trim();
-  const apiBase = rawBase.replace(/\/$/, "");
-  const path = "/api/jobs-analysis/claude-report";
-  return apiBase ? `${apiBase}${path}` : path;
+  return resolveApiUrl("/api/jobs-analysis/claude-report");
 }

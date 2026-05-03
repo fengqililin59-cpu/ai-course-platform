@@ -5,8 +5,10 @@ import {
   Briefcase,
   ChevronRight,
   Loader2,
+  Minus,
   Radar,
   Sparkles,
+  TrendingDown,
   TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +21,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { JobsLiveSearch } from "@/components/JobsLiveSearch";
 import { useCoursesCatalog } from "@/contexts/CoursesCatalogContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
@@ -32,6 +35,7 @@ import {
   writeReportCache,
   type JobsQuizAnswers,
 } from "@/lib/jobsAnalysisReport";
+import { fetchHotSkills, type HotSkillItem } from "@/lib/jobsSearchApi";
 import type { Course, CourseCategory } from "@/data/courses";
 
 type Difficulty = "入门" | "进阶" | "专业";
@@ -46,6 +50,8 @@ type SkillDemandRow = {
   salaryMaxK: number;
   difficulty: Difficulty;
   category: CourseCategory;
+  /** 与上一轮快照对比；未拉取 API 时可为空 */
+  trend?: "up" | "down" | "flat";
 };
 
 const SKILL_DEMAND_TOP10: SkillDemandRow[] = [
@@ -151,7 +157,36 @@ const SKILL_DEMAND_TOP10: SkillDemandRow[] = [
   },
 ];
 
-const MAX_SALARY_K = Math.max(...SKILL_DEMAND_TOP10.map((s) => s.salaryMaxK));
+function parseSalaryMaxK(label: string): number {
+  const s = String(label || "");
+  const m = s.match(/(\d+)\s*[-~–]\s*(\d+)\s*[Kk千]/);
+  if (m) return Math.max(parseInt(m[1], 10), parseInt(m[2], 10));
+  const m2 = s.match(/(\d+)\s*[Kk]/);
+  if (m2) return parseInt(m2[1], 10);
+  return 10;
+}
+
+function mergeHotSkillsFromApi(
+  items: HotSkillItem[],
+  staticRows: SkillDemandRow[],
+): SkillDemandRow[] {
+  return items.map((item, i) => {
+    const base = staticRows.find((s) => s.name === item.name);
+    const trend: "up" | "down" | "flat" =
+      item.trend === "down" ? "down" : item.trend === "flat" ? "flat" : "up";
+    return {
+      id: base?.id ?? `live-${i}`,
+      name: item.name,
+      emoji: base?.emoji ?? "📌",
+      jobs: Number(item.jobCount) || 0,
+      salaryLabel: item.avgSalary || "面议",
+      salaryMaxK: base?.salaryMaxK ?? parseSalaryMaxK(item.avgSalary),
+      difficulty: base?.difficulty ?? "进阶",
+      category: base?.category ?? "tools",
+      trend,
+    };
+  });
+}
 
 function difficultyBadgeClass(d: Difficulty): string {
   if (d === "入门")
@@ -291,6 +326,35 @@ export function JobsRadarPage() {
   React.useEffect(() => {
     document.title = "AI技能就业雷达 - AIlearn Pro";
   }, []);
+
+  const [demandRows, setDemandRows] =
+    React.useState<SkillDemandRow[]>(SKILL_DEMAND_TOP10);
+  const [hotSkillsLive, setHotSkillsLive] = React.useState<{
+    snapshotUpdatedAt: string | null;
+    source: "db" | "static";
+  } | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { skills, snapshotUpdatedAt, source } = await fetchHotSkills();
+        if (cancelled || skills.length === 0) return;
+        setDemandRows(mergeHotSkillsFromApi(skills, SKILL_DEMAND_TOP10));
+        setHotSkillsLive({ snapshotUpdatedAt, source });
+      } catch {
+        /* 保留本地 SKILL_DEMAND_TOP10 */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const maxSalaryK = React.useMemo(
+    () => Math.max(...demandRows.map((s) => s.salaryMaxK), 1),
+    [demandRows],
+  );
 
   const [bg, setBg] = React.useState<QuizBg>("");
   const [goal, setGoal] = React.useState<QuizGoal>("");
@@ -501,7 +565,9 @@ export function JobsRadarPage() {
           </p>
           <p className="mt-6 inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white/85 backdrop-blur">
             <Sparkles className="h-4 w-4 shrink-0 text-amber-300" aria-hidden />
-            数据更新于：今日
+            {hotSkillsLive?.source === "db" && hotSkillsLive.snapshotUpdatedAt
+              ? `热门技能快照：${hotSkillsLive.snapshotUpdatedAt}`
+              : "数据更新于：今日（岗位数为参考）"}
           </p>
         </div>
       </section>
@@ -513,15 +579,17 @@ export function JobsRadarPage() {
             热门需求
           </p>
           <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
-            热门 AI 技能需求排行（TOP 10）
+            热门 AI 技能需求排行（TOP {demandRows.length}）
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            以下为平台整理的参考数据，后续将支持接入实时招聘 API。
+            {hotSkillsLive?.source === "db"
+              ? "岗位数与薪资区间来自服务器定时汇总；实时岗位见下方「实时岗位搜索」。"
+              : "以下为平台整理的参考排行；实时岗位见下方「实时岗位搜索」。"}
           </p>
         </div>
 
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          {SKILL_DEMAND_TOP10.map((row, index) => (
+          {demandRows.map((row, index) => (
             <Card
               key={row.id}
               className="flex flex-col border-border/70 shadow-sm transition-shadow hover:shadow-md"
@@ -547,11 +615,34 @@ export function JobsRadarPage() {
                     <span className="text-muted-foreground">个岗位</span>
                   </span>
                   <span
-                    className="inline-flex items-center gap-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400"
-                    title="需求热度趋势"
+                    className={cn(
+                      "inline-flex items-center gap-0.5 text-xs font-semibold",
+                      (row.trend ?? "up") === "up" &&
+                        "text-emerald-600 dark:text-emerald-400",
+                      (row.trend ?? "up") === "down" &&
+                        "text-rose-600 dark:text-rose-400",
+                      (row.trend ?? "up") === "flat" && "text-muted-foreground",
+                    )}
+                    title="需求热度趋势（与上一轮快照对比）"
                   >
-                    <TrendingUp className="h-3.5 w-3.5" aria-hidden />
-                    需求↑
+                    {(row.trend ?? "up") === "up" && (
+                      <>
+                        <TrendingUp className="h-3.5 w-3.5" aria-hidden />
+                        需求↑
+                      </>
+                    )}
+                    {(row.trend ?? "up") === "down" && (
+                      <>
+                        <TrendingDown className="h-3.5 w-3.5" aria-hidden />
+                        需求↓
+                      </>
+                    )}
+                    {(row.trend ?? "up") === "flat" && (
+                      <>
+                        <Minus className="h-3.5 w-3.5" aria-hidden />
+                        持平
+                      </>
+                    )}
                   </span>
                 </div>
                 <p className="text-sm">
@@ -578,6 +669,10 @@ export function JobsRadarPage() {
         </div>
       </section>
 
+      <section className="mx-auto max-w-6xl px-4 pb-10 sm:px-6 sm:pb-14">
+        <JobsLiveSearch />
+      </section>
+
       {/* 薪资对比条 */}
       <section className="border-y border-border/60 bg-muted/25 py-12 sm:py-16">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -588,8 +683,8 @@ export function JobsRadarPage() {
             取各技能薪资区间上限（K）做横向对比，不代表个体实际收入。
           </p>
           <ul className="mt-8 space-y-4" aria-label="各技能薪资上限对比">
-            {SKILL_DEMAND_TOP10.map((row) => {
-              const pct = Math.round((row.salaryMaxK / MAX_SALARY_K) * 100);
+            {demandRows.map((row) => {
+              const pct = Math.round((row.salaryMaxK / maxSalaryK) * 100);
               return (
                 <li key={`bar-${row.id}`} className="space-y-1.5">
                   <div className="flex items-center justify-between gap-3 text-sm">

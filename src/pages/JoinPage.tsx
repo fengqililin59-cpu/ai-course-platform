@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/contexts/ToastContext";
+import { resolveApiUrl } from "@/lib/apiBase";
 import { cn } from "@/lib/utils";
 
 const EXPERTISE_OPTIONS = [
@@ -107,7 +108,7 @@ export function JoinPage() {
     };
     console.log(payload);
     try {
-      const res = await fetch("/api/creator/join", {
+      const res = await fetch(resolveApiUrl("/api/creator/join"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

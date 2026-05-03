@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="960" height="540">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e1b4b"/>
+      <stop offset="100%" style="stop-color:#312e81"/>
+    </linearGradient>
+    <linearGradient id="bar" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#a78bfa"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="540" fill="url(#bg)"/>
+  <rect x="24" y="24" width="200" height="492" rx="8" fill="#0f172a" opacity="0.85"/>
+  <text x="44" y="56" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="14" font-weight="600">-p‘ · CRM</text>
+  <rect x="44" y="80" width="160" height="8" rx="2" fill="#334155"/>
+  <rect x="44" y="100" width="120" height="8" rx="2" fill="#475569"/>
+  <rect x="44" y="130" width="160" height="8" rx="2" fill="#334155"/>
+  <rect x="44" y="150" width="140" height="8" rx="2" fill="#475569"/>
+  <rect x="44" y="180" width="160" height="8" rx="2" fill="#334155"/>
+  <rect x="44" y="200" width="100" height="8" rx="2" fill="#475569"/>
+  <rect x="240" y="24" width="696" height="56" rx="8" fill="#0f172a" opacity="0.75"/>
+  <text x="264" y="58" fill="#c4b5fd" font-family="system-ui,sans-serif" font-size="13">zý³V · 7‹pn</text>
+  <rect x="240" y="96" width="216" height="100" rx="8" fill="#0f172a" opacity="0.8"/>
+  <text x="260" y="128" fill="#94a3b8" font-size="11" font-family="system-ui,sans-serif">/¡>>7‹	</text>
+  <text x="260" y="168" fill="#f5d0fe" font-size="22" font-weight="700" font-family="system-ui,sans-serif">¥2200+</text>
+  <rect x="472" y="96" width="216" height="100" rx="8" fill="#0f172a" opacity="0.8"/>
+  <text x="492" y="128" fill="#94a3b8" font-size="11" font-family="system-ui,sans-serif">Ûöl</text>
+  <text x="492" y="168" fill="#86efac" font-size="22" font-weight="700" font-family="system-ui,sans-serif">100%</text>
+  <rect x="704" y="96" width="232" height="100" rx="8" fill="#0f172a" opacity="0.8"/>
+  <text x="724" y="128" fill="#94a3b8" font-size="11" font-family="system-ui,sans-serif">30+ >‡</text>
+  <text x="724" y="168" fill="#7dd3fc" font-size="22" font-weight="700" font-family="system-ui,sans-serif">0%</text>
+  <rect x="240" y="212" width="696" height="304" rx="8" fill="#0f172a" opacity="0.65"/>
+  <text x="264" y="248" fill="#94a3b8" font-size="12" font-family="system-ui,sans-serif">>>‹¿:	</text>
+  <path d="M280 460 L360 380 L440 400 L520 340 L600 360 L680 320 L760 340 L840 300" stroke="#a78bfa" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <rect x="280" y="400" width="32" height="80" rx="4" fill="url(#bar)" opacity="0.9"/>
+  <rect x="340" y="360" width="32" height="120" rx="4" fill="url(#bar)" opacity="0.75"/>
+  <rect x="400" y="380" width="32" height="100" rx="4" fill="url(#bar)" opacity="0.85"/>
+  <rect x="460" y="340" width="32" height="140" rx="4" fill="url(#bar)" opacity="0.95"/>
+  <rect x="520" y="400" width="32" height="80" rx="4" fill="url(#bar)" opacity="0.7"/>
+  <rect x="580" y="370" width="32" height="110" rx="4" fill="url(#bar)" opacity="0.8"/>
+</svg>

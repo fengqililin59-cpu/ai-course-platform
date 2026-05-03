@@ -1,11 +1,23 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, ClipboardList, TrendingUp, UserCheck, RefreshCw } from "lucide-react";
+import {
+  BookOpen,
+  ClipboardList,
+  Radar,
+  RefreshCw,
+  TrendingUp,
+  UserCheck,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { getAdminApiToken } from "@/admin/AdminAuth";
 import { cn } from "@/lib/utils";
 
-const ADMIN_TOKEN = "Aike@2026#Ai";
-function authHeaders() { return { Authorization: `Bearer ${ADMIN_TOKEN}` }; }
+function authHeaders(): Record<string, string> {
+  const token = getAdminApiToken();
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
+}
 function fmt(dt: string) { return dt ? dt.slice(0, 16).replace("T", " ") : "—"; }
 const ST: Record<string, { label: string; cls: string }> = {
   pending:  { label: "待审核", cls: "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400" },
@@ -22,6 +34,13 @@ type App   = { id:number; name:string; wechat:string; expertise:string; course_n
 type Creator = { id:number; phone:string; display_name:string|null; status:string; course_count:number; order_count:number; total_earnings:number; created_at:string };
 type Order = { id:number; out_trade_no:string; buyer_phone:string; total_amount:number; creator_amount:number; status:string; paid_at:string|null; created_at:string };
 
+type RefreshHotSkillsRes = {
+  success?: boolean;
+  count?: number;
+  snapshotUpdatedAt?: string | null;
+  message?: string;
+};
+
 export function AdminDashboardPage() {
   const [stats, setStats]     = React.useState<Stats|null>(null);
   const [apps, setApps]       = React.useState<App[]>([]);
@@ -29,6 +48,36 @@ export function AdminDashboardPage() {
   const [orders, setOrders]   = React.useState<Order[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [tab, setTab]         = React.useState<"apps"|"creators"|"orders">("apps");
+  const [hotRefreshBusy, setHotRefreshBusy] = React.useState(false);
+  const [hotRefreshMsg, setHotRefreshMsg] = React.useState("");
+
+  async function refreshHotSkillsSnapshot() {
+    const token = getAdminApiToken();
+    if (!token) {
+      setHotRefreshMsg("未找到 admin_token，请重新登录后台。");
+      return;
+    }
+    setHotRefreshBusy(true);
+    setHotRefreshMsg("");
+    try {
+      const res = await fetch("/api/admin/jobs/refresh-hot-skills", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = (await res.json()) as RefreshHotSkillsRes;
+      if (res.ok && data.success) {
+        setHotRefreshMsg(
+          `已更新 ${data.count ?? 0} 个关键词，快照时间：${data.snapshotUpdatedAt ?? "—"}`,
+        );
+      } else {
+        setHotRefreshMsg(data.message || `请求失败（${res.status}）`);
+      }
+    } catch {
+      setHotRefreshMsg("网络错误");
+    } finally {
+      setHotRefreshBusy(false);
+    }
+  }
 
   React.useEffect(() => { document.title = "数据总览 - 后台"; load(); }, []);
 
@@ -87,6 +136,51 @@ export function AdminDashboardPage() {
           </Card>
         ))}
       </div>
+
+      <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base font-semibold">
+            <Radar className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
+            就业雷达 · 热门技能快照
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            与服务器定时任务{" "}
+            <code className="rounded bg-slate-100 px-1 py-0.5 text-xs dark:bg-slate-800">
+              npm run jobs:refresh-hot-skills
+            </code>{" "}
+            相同逻辑，写入数据库后前台「就业雷达」页会展示岗位数、薪资区间与趋势。
+          </p>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center gap-3 pt-0">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            disabled={hotRefreshBusy}
+            onClick={() => void refreshHotSkillsSnapshot()}
+          >
+            {hotRefreshBusy ? "刷新中…" : "立即刷新热门技能"}
+          </Button>
+          {hotRefreshMsg ? (
+            <p
+              className={cn(
+                "text-sm",
+                hotRefreshMsg.startsWith("已更新")
+                  ? "text-emerald-700 dark:text-emerald-400"
+                  : "text-rose-600 dark:text-rose-400",
+              )}
+            >
+              {hotRefreshMsg}
+            </p>
+          ) : null}
+          <Link
+            to="/jobs"
+            className="text-sm text-violet-600 underline-offset-2 hover:underline dark:text-violet-400"
+          >
+            查看前台就业雷达 →
+          </Link>
+        </CardContent>
+      </Card>
 
       <div className="flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 w-fit dark:border-slate-800 dark:bg-slate-900">
         {([["apps","入驻申请"],["creators","创作者列表"],["orders","订单记录"]] as const).map(([k,l])=>(
